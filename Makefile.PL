@@ -10,7 +10,9 @@ readme_from    'lib/Unicode/UTF8.pod';
 requires       'Carp'        => '0';
 requires       'Exporter'    => '0';
 requires       'XSLoader'    => '0';
+
 test_requires  'Test::More'  => '0.47';
+test_requires  'Test::Fatal' => '0.006';
 test_requires  'Encode'      => '1.9801';
 makemaker_args INC => '-I.';
 
