@@ -4,10 +4,11 @@ use strict;
 use warnings;
 
 use Carp        qw[];
+use IO::File    qw[SEEK_SET SEEK_END];
 use Test::Fatal qw[exception];
 
 BEGIN {
-    our @EXPORT_OK  = qw[ throws_ok pack_utf8 pack_overlong_utf8 ];
+    our @EXPORT_OK  = qw[ throws_ok pack_utf8 pack_overlong_utf8 rewind slurp ];
     our %EXPORT_TAGS = (
         all => [ @EXPORT_OK ],
     );
@@ -69,6 +70,34 @@ sub throws_ok (&$;$) {
         }
     }
 }
+
+sub rewind(*) {
+    seek($_[0], 0, SEEK_SET)
+      || die(qq/Couldn't rewind file handle: '$!'/);
+}
+
+sub slurp (*) {
+    my ($fh) = @_;
+
+    seek($fh, 0, SEEK_END)
+      || die(qq/Couldn't navigate to EOF on file handle: '$!'/);
+
+    my $exp = tell($fh);
+
+    rewind($fh);
+
+    binmode($fh)
+      || die(qq/Couldn't binmode file handle: '$!'/);
+
+    my $buf = do { local $/; <$fh> };
+    my $got = length $buf;
+
+    ($exp == $got)
+      || die(qq[I/O read mismatch (expexted: $exp got: $got)]);
+
+    return $buf;
+}
+
 
 1;
 
