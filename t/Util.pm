@@ -3,10 +3,11 @@ package t::Util;
 use strict;
 use warnings;
 
-use Carp qw[];
+use Carp        qw[];
+use Test::Fatal qw[exception];
 
 BEGIN {
-    our @EXPORT_OK  = qw[ pack_utf8 pack_overlong_utf8 ];
+    our @EXPORT_OK  = qw[ throws_ok pack_utf8 pack_overlong_utf8 ];
     our %EXPORT_TAGS = (
         all => [ @EXPORT_OK ],
     );
@@ -43,6 +44,30 @@ sub pack_overlong_utf8 ($) {
         push @enc, pack_utf8($cp, $i + 2);
     }
     return wantarray ? @enc : $enc[0];
+}
+
+
+my $Tester;
+sub throws_ok (&$;$) {
+    my ($code, $regexp, $name) = @_;
+
+    require Test::Builder;
+    $Tester ||= Test::Builder->new;
+
+    my $e  = exception(\&$code);
+    my $ok = ($e && $e =~ m/$regexp/);
+
+    $Tester->ok($ok, $name);
+
+    unless ($ok) {
+        if ($e) {
+            $Tester->diag("expecting: " . $regexp);
+            $Tester->diag("found: " . $e);
+        }
+        else {
+            $Tester->diag("expected an exception but none was raised");
+        }
+    }
 }
 
 1;

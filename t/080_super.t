@@ -3,17 +3,16 @@
 use strict;
 use warnings;
 
-use Test::More  qw[no_plan];
-use Test::Fatal qw[dies_ok];
+use Test::More tests => 513;
+use t::Util    qw[throws_ok];
 
 BEGIN {
-    use_ok('Unicode::UTF8', qw[ decode_utf8
-                                encode_utf8 ]);
+    use_ok('Unicode::UTF8', qw[ encode_utf8 ]);
 }
 
 my @SUPER = ();
 {
-    for (my $i = 0x8000000; $i < 0xFFFFFFFF; $i += 0x400000) {
+    for (my $i = 0x8000_0000; $i < 0xFFFF_FFFF; $i += 0x400000) {
         push @SUPER, $i;
     }
 }
@@ -24,6 +23,6 @@ foreach my $cp (@SUPER) {
 
     my $string = do { no warnings 'utf8'; pack('U', $cp) };
 
-    dies_ok { encode_utf8($string) } $name;
+    throws_ok { encode_utf8($string) } qr/Can't map super code point/, $name;
 }
 

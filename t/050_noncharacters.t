@@ -3,9 +3,8 @@
 use strict;
 use warnings;
 
-use Test::More  tests => 133;
-use Test::Fatal qw[dies_ok];
-use t::Util     qw[pack_utf8];
+use Test::More tests => 133;
+use t::Util    qw[throws_ok pack_utf8];
 
 BEGIN {
     use_ok('Unicode::UTF8', qw[ decode_utf8
@@ -25,7 +24,7 @@ foreach my $cp (@NONCHARACTERS) {
     my $name = sprintf 'decode_utf8(<%s>) noncharacter U+%.4X',
       join(' ', map { sprintf '%.2X', ord $_ } split //, $octets), $cp;
 
-    dies_ok { decode_utf8($octets) } $name;
+    throws_ok { decode_utf8($octets) } qr/Can't interchange noncharacter code point/, $name;
 }
 
 foreach my $cp (@NONCHARACTERS) {
@@ -34,6 +33,6 @@ foreach my $cp (@NONCHARACTERS) {
 
     my $string = do { no warnings 'utf8'; pack('U', $cp) };
 
-    dies_ok { encode_utf8($string) } $name;
+    throws_ok { encode_utf8($string) } qr/Can't interchange noncharacter code point/, $name;
 }
 
