@@ -4,6 +4,7 @@ use warnings;
 
 use Benchmark     qw[];
 use Encode        qw[];
+use FindBin       qw[$Bin];
 use IO::Dir       qw[];
 use Unicode::UTF8 qw[];
 
@@ -11,7 +12,7 @@ my $enc = Encode::find_encoding('UTF-8')
   || die(q/find_encoding('UTF-8')/);
 
 my $dir = do {
-    -d './data' ? './data' : './benchmarks/data';
+    -d "$Bin/data" ? "$Bin/data" : die q<Could not find path to benchamrks/data directory>;
 };
 
 my @docs = do {
