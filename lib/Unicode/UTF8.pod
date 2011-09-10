@@ -1,6 +1,6 @@
 =head1 NAME
 
-Unicode::UTF8 - Encoding and decoding of interchangeable UTF-8 encoding.
+Unicode::UTF8 - Encoding and decoding of interchangeable UTF-8 encoding form.
 
 =head1 SYNOPSIS
 
@@ -11,8 +11,8 @@ Unicode::UTF8 - Encoding and decoding of interchangeable UTF-8 encoding.
 
 =head1 DESCRIPTION
 
-This module provides functions to encode and decode interchangeable UTF-8 as 
-defined by Unicode and ISO/IEC 10646:2011.
+This module provides functions to encode and decode interchangeable UTF-8 
+encoding form as defined by Unicode and ISO/IEC 10646:2011.
 
 =head1 FUNCTIONS
 
@@ -61,7 +61,7 @@ U+D800 to U+DFFF.
 ISO/IEC 10646 originally defined codespace up to U-7FFFFFFF but it was restricted
 in 2000 (JTC1/SC2/WG2 N 2225 RESOLUTION M38.6) to U+10FFFF.
 
-=item Can't map super code point %.8X
+=item Can't map super code point \x{%X}
 
 (F) Code points in the range 2^31 to 2^64-1.
 

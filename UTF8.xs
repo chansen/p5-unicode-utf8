@@ -150,7 +150,7 @@ croak_unmappable(pTHX_ const UV cp) {
     const char *fmt;
 
     if (cp > 0x7FFFFFFF)
-        fmt = "Can't map super code point 0x%"UVXf;
+        fmt = "Can't map super code point \\x{%"UVXf"}";
     else if (cp > 0x10FFFF)
         fmt = "Can't map restricted code point U-%08"UVXf;
     else if (cp >= 0xFDD0 && (cp <= 0xFDEF || (cp & 0xFFFE) == 0xFFFE))
