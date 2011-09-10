@@ -1,6 +1,9 @@
 use strict;
 use inc::Module::Install;
 
+("\t" eq "\x09")
+  || die("OS unsupported\n");
+
 name           'Unicode-UTF8';
 perl_version   '5.008001';
 all_from       'lib/Unicode/UTF8.pm';
