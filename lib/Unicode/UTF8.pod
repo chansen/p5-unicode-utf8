@@ -38,7 +38,7 @@ None by default. All functions can be exported using the C<:all> tag or individu
 
 (F) C<decode_utf8()> called with a wide character string.
 
-=item Can't decode ill-formed %s octet sequence <%s>
+=item Can't decode ill-formed %s octet sequence <%s> in position %u
 
 (F) C<decode_utf8()> called with octets containing ill-formed UTF-8.
 

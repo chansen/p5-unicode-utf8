@@ -164,8 +164,8 @@ croak_unmappable(pTHX_ const UV cp) {
 }
 
 static void
-croak_illformed(pTHX_ const U8 *s, STRLEN len, const char *enc) {
-    static const char *fmt = "Can't decode ill-formed %s octet sequence <%s>";
+croak_illformed(pTHX_ const U8 *s, STRLEN len, const char *enc, STRLEN pos) {
+    static const char *fmt = "Can't decode ill-formed %s octet sequence <%s> in position %"UVuf;
     static const char *hex = "0123456789ABCDEF";
     char seq[20 * 3 + 4];
     char *d = seq, *dstop = d + sizeof(seq) - 4;
@@ -184,7 +184,7 @@ croak_illformed(pTHX_ const U8 *s, STRLEN len, const char *enc) {
     }
     *d = 0;
 
-    Perl_croak(aTHX_ fmt, enc, seq);
+    Perl_croak(aTHX_ fmt, enc, seq, (UV)pos);
 }
 
 MODULE = Unicode::UTF8    PACKAGE = Unicode::UTF8
@@ -212,7 +212,7 @@ decode_utf8(octets)
         if (utf8_unpack(src, len, &v))
             croak_unmappable(aTHX_ v);
         else
-            croak_illformed(aTHX_ src, utf8_skip(src, len), "UTF-8");
+            croak_illformed(aTHX_ src, utf8_skip(src, len), "UTF-8", off);
     }
     sv_setpvn(TARG, (const char *)src, len);
     SvUTF8_on(TARG);
@@ -252,21 +252,22 @@ encode_utf8(string)
     }
     else {
         UV v;
+        STRLEN slen;
         STRLEN off = utf8_check(src, len);
         if (off != len) {
             src += off;
             len -= off;
-            v = utf8n_to_uvuni(src, len, &off, UTF8_ALLOW_ANYUV|UTF8_CHECK_ONLY);
-            if (off == (STRLEN) -1) {
-                off = 1;
+            v = utf8n_to_uvuni(src, len, &slen, UTF8_ALLOW_ANYUV|UTF8_CHECK_ONLY);
+            if (slen == (STRLEN) -1) {
+                slen = 1;
                 if (UTF8_IS_START(*src)) {
                     STRLEN skip = UTF8SKIP(src);
                     if (skip > len)
                         skip = len;
-                    while (off < skip && UTF8_IS_CONTINUATION(src[off]))
-                        off++;
+                    while (slen < skip && UTF8_IS_CONTINUATION(src[slen]))
+                        slen++;
                 }
-                croak_illformed(aTHX_ src, off, "UTF-X");
+                croak_illformed(aTHX_ src, slen, "UTF-X", off);
             }
             else
                 croak_unmappable(aTHX_ v);
