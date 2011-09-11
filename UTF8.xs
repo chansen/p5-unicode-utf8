@@ -196,7 +196,6 @@ decode_utf8(octets)
     dXSTARG;
     const U8 *src;
     STRLEN len, off;
-    SV *dsv;
     UV v;
   PPCODE:
     src = (const U8 *)SvPV_const(octets, len);
@@ -215,9 +214,8 @@ decode_utf8(octets)
         else
             croak_illformed(aTHX_ src, utf8_skip(src, len), "UTF-8");
     }
-    dsv = TARG;
-    sv_setpvn(dsv, (const char *)src, len);
-    SvUTF8_on(dsv);
+    sv_setpvn(TARG, (const char *)src, len);
+    SvUTF8_on(TARG);
     PUSHTARG;
 
 void
@@ -227,16 +225,15 @@ encode_utf8(string)
     dXSTARG;
     const U8 *src;
     STRLEN len;
-    SV *dsv = TARG;
   PPCODE:
     src = (const U8 *)SvPV_const(string, len);
     if (!SvUTF8(string)) {
         const U8 *send;
         U8 *d;
 
-        SvUPGRADE(dsv, SVt_PV);
-        SvGROW(dsv, len * 2 + 1);
-        d    = (U8 *)SvPVX(dsv);
+        SvUPGRADE(TARG, SVt_PV);
+        SvGROW(TARG, len * 2 + 1);
+        d    = (U8 *)SvPVX(TARG);
         send = src + len;
 
         for (; src < send; src++) {
@@ -249,8 +246,9 @@ encode_utf8(string)
             }
         }
         *d = 0;
-        SvCUR_set(dsv, d - (U8 *)SvPVX(dsv));
-        SvPOK_only(dsv);
+        SvCUR_set(TARG, d - (U8 *)SvPVX(TARG));
+        SvPOK_only(TARG);
+        SvTAINT(TARG);
     }
     else {
         UV v;
@@ -273,9 +271,9 @@ encode_utf8(string)
             else
                 croak_unmappable(aTHX_ v);
         }
-        sv_setpvn(dsv, (const char *)src, len);
+        sv_setpvn(TARG, (const char *)src, len);
     }
-    SvUTF8_off(dsv);
+    SvUTF8_off(TARG);
     PUSHTARG;
 
 
