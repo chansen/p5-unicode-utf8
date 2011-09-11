@@ -3,32 +3,61 @@
 use strict;
 use warnings;
 
-use Test::More  tests => 5;
+use Test::More  tests => 1093;
 use Test::Fatal qw[lives_ok];
-use t::Util     qw[slurp];
+use t::Util     qw[pack_utf8 slurp];
 
 BEGIN {
     use_ok('Unicode::UTF8', qw[ decode_utf8
                                 encode_utf8 ]);
 }
 
-my $octets = do {
-    open my $fh, '<:raw', 't/quickbrown.txt' or die q<could not open 't/quickbrown.txt'>;
-    slurp($fh);
-};
+for (my $cp = 0x00; $cp < 0x10FFFF; $cp += 0x1000) {
+    my $octets = pack_utf8($cp);
+    my $string = pack('U', $cp);
 
-my $string = do { utf8::decode(my $copy = $octets); $copy };
+    {
+        my $name = sprintf 'decode_utf8(<%s>) U+%.4X',
+          join(' ', map { sprintf '%.2X', ord $_ } split //, $octets), $cp;
 
-{
-    my $got;
-    lives_ok { $got = decode_utf8($octets); } 'decode_utf8()';
-    is($got, $string, 'decode_utf8() result');
+        my $got;
+        lives_ok { $got = decode_utf8($octets); } $name;
+        is($got, $string, $name);
+    }
+
+    {
+        my $name = sprintf 'encode_utf8("\\x{%.4X}") U+%.4X',
+          $cp, $cp;
+
+        my $got;
+        lives_ok { $got = encode_utf8($string); } $name;
+        is($got, $octets, $name);
+    }
 }
 
 {
-    my $got;
-    lives_ok { $got = encode_utf8($string); } 'encode_utf8()';
-    is($got, $octets, 'encode_utf8() result');
-}
+    my $octets = do {
+        open my $fh, '<:raw', 't/quickbrown.txt'
+          or die qq<Could not open 't/quickbrown.txt': '$!'>;
+        slurp($fh);
+    };
 
+    my $string = do { 
+        utf8::decode(my $copy = $octets)
+          or die q<Could not decode quickbrown.txt>;
+        $copy;
+    };
+
+    {
+        my $got;
+        lives_ok { $got = decode_utf8($octets); } 'decode_utf8(quickbrown.txt)';
+        is($got, $string, 'decode_utf8(quickbrown.txt) result');
+    }
+
+    {
+        my $got;
+        lives_ok { $got = encode_utf8($string); } 'encode_utf8(quickbrown.txt)';
+        is($got, $octets, 'encode_utf8(quickbrown.txt) result');
+    }
+}
 
