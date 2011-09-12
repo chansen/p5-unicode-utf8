@@ -1,6 +1,6 @@
 =head1 NAME
 
-Unicode::UTF8 - Encoding and decoding of interchangeable UTF-8 encoding form.
+Unicode::UTF8 - Encoding and decoding of UTF-8 encoding form.
 
 =head1 SYNOPSIS
 
@@ -11,8 +11,8 @@ Unicode::UTF8 - Encoding and decoding of interchangeable UTF-8 encoding form.
 
 =head1 DESCRIPTION
 
-This module provides functions to encode and decode interchangeable UTF-8 
-encoding form as defined by Unicode and ISO/IEC 10646:2011.
+This module provides functions to encode and decode UTF-8 encoding form as 
+defined by Unicode and ISO/IEC 10646:2011.
 
 =head1 FUNCTIONS
 
@@ -21,10 +21,16 @@ encoding form as defined by Unicode and ISO/IEC 10646:2011.
 Returns an decoded representation of C<$octets> in UTF-8 encoding as a character
 string.
 
+Throws an exception if C<$octets> constains an ill-formed UTF-8 sequence or code 
+points which can't be interchanged.
+
 =head2 encode_utf8($string)
 
 Returns an encoded representation of C<$string> in UTF-8 encoding as an octet
 string.
+
+Throws an exception if C<$string> contains code points which can't be interchanged
+or represented in UTF-8 encoding form.
 
 =head1 EXPORTS
 
@@ -36,11 +42,11 @@ None by default. All functions can be exported using the C<:all> tag or individu
 
 =item Can't decode a wide character string
 
-(F) C<decode_utf8()> called with a wide character string.
+(F) Wide character in octets.
 
 =item Can't decode ill-formed %s octet sequence <%s> in position %u
 
-(F) C<decode_utf8()> called with octets containing ill-formed UTF-8.
+(F) Encountered an ill-formed octet sequence.
 
 =item Can't interchange noncharacter code point U+%.4X
 
@@ -58,12 +64,13 @@ U+D800 to U+DFFF.
 
 (F) Code points in the range U-00110000 to U-7FFFFFFF.
 
-ISO/IEC 10646 originally defined codespace up to U-7FFFFFFF but it was restricted
-in 2000 (JTC1/SC2/WG2 N 2225 RESOLUTION M38.6) to U+10FFFF.
+ISO/IEC 10646 originally defined codespace up to U-7FFFFFFF. This was 
+restricted by JTC1/SC2/WG2 Resolution M38.6 (Restriction of encoding space)
+to U-0010FFFF in 2000.
 
 =item Can't map super code point \x{%X} to UTF-8 encoding form
 
-(F) Code points in the range 2^31 to 2^64-1.
+(F) Code points in the range 2^31 to 2^64-1. Perl's extended codespace.
 
 =back
 
@@ -75,6 +82,23 @@ in 2000 (JTC1/SC2/WG2 N 2225 RESOLUTION M38.6) to U+10FFFF.
 
 =back
 
+=head1 SUPPORT
+
+=head2 Bugs / Feature Requests
+
+Please report any bugs or feature requests by email to C<bug-unicode-utf8 at rt.cpan.org>, or through
+the web interface at L<http://rt.cpan.org/Public/Dist/Display.html?Name=Unicode-UTF8>. You will be automatically notified of any
+progress on the request by the system.
+
+=head2 Source Code
+
+This is open source software. The code repository is available for public 
+review and contribution under the terms of the license.
+
+L<http://github.com/chansen/p5-unicode-utf8>
+
+    git clone http://github.com/chansen/p5-unicode-utf8
+
 =head1 AUTHOR
 
 Christian Hansen C<chansen@cpan.org>
@@ -83,6 +107,6 @@ Christian Hansen C<chansen@cpan.org>
 
 Copyright 2011 by Christian Hansen.
 
-This library is free software; you can redistribute it and/or modify 
-it under the same terms as Perl itself.
+This is free software; you can redistribute it and/or modify it under
+the same terms as the Perl 5 programming language system itself.
 
