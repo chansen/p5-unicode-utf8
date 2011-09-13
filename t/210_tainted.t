@@ -47,7 +47,7 @@ taint_start();
 {
     my ($a, $b);
 
-    my $string = "Flygande b\xE4ckasiner s\F6ka hwila p\xE5 mjuka tuvor";
+    my $string = "Flygande b\xE4ckasiner s\xF6ka hwila p\xE5 mjuka tuvor";
 
     $a = encode_utf8($string);
     $b = encode_utf8($string . tainted());
