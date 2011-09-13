@@ -21,8 +21,8 @@ defined by Unicode and ISO/IEC 10646:2011.
 Returns an decoded representation of C<$octets> in UTF-8 encoding as a character
 string.
 
-Throws an exception if C<$octets> contains an ill-formed UTF-8 sequence or a code 
-point which can't be interchanged.
+Throws an exception if C<$octets> contains an ill-formed UTF-8 sequence or an
+encoded code point which can't be interchanged.
 
 =head2 encode_utf8($string)
 
