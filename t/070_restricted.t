@@ -33,6 +33,6 @@ foreach my $cp (@RESTRICTED) {
 
     my $string = do { no warnings 'utf8'; pack('U', $cp) };
 
-    throws_ok { encode_utf8($string) } qr/Can't map restricted code point/, $name;
+    throws_ok { encode_utf8($string) } qr/Can't represent restricted code point/, $name;
 }
 

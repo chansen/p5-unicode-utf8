@@ -28,6 +28,6 @@ foreach my $cp (@SURROGATES) {
 
     my $string = do { no warnings 'utf8'; pack('U', $cp) };
 
-    throws_ok { encode_utf8($string) } qr/Can't map surrogate code point/, $name;
+    throws_ok { encode_utf8($string) } qr/Can't represent surrogate code point/, $name;
 }
 

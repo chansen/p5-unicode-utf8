@@ -150,15 +150,15 @@ croak_unmappable(pTHX_ const UV cp) {
     const char *fmt;
 
     if (cp > 0x7FFFFFFF)
-        fmt = "Can't map super code point \\x{%"UVXf"} to UTF-8 encoding form";
+        fmt = "Can't represent super code point \\x{%"UVXf"} in UTF-8 encoding form";
     else if (cp > 0x10FFFF)
-        fmt = "Can't map restricted code point U-%08"UVXf" to UTF-8 encoding form";
+        fmt = "Can't represent restricted code point U-%08"UVXf" in UTF-8 encoding form";
     else if (cp >= 0xFDD0 && (cp <= 0xFDEF || (cp & 0xFFFE) == 0xFFFE))
         fmt = "Can't interchange noncharacter code point U+%"UVXf;
     else if ((cp & 0xF800) == 0xD800)
-        fmt = "Can't map surrogate code point U+%"UVXf" to UTF-8 encoding form";
+        fmt = "Can't represent surrogate code point U+%"UVXf" in UTF-8 encoding form";
     else
-        fmt = "Can't map code point U+%04"UVXf" to UTF-8 encoding form";
+        fmt = "Can't represent code point U+%04"UVXf" in UTF-8 encoding form";
 
     Perl_croak(aTHX_ fmt, cp);
 }
