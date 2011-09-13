@@ -1,0 +1,9 @@
+0.01_02 2011-09-13
+  - Changed wording in encoding exception messages from "Can't map \w+ code point"
+    to "Can't represent \w+ code point",
+  - Added a taint test.
+  - Added a leaks test.
+
+0.01_01 2011-09-12
+  - Initial CPAN release.
+
