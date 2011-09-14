@@ -149,10 +149,8 @@ static void
 croak_unmappable(pTHX_ const UV cp) {
     const char *fmt;
 
-    if (cp > 0x7FFFFFFF)
+    if (cp > 0x10FFFF)
         fmt = "Can't represent super code point \\x{%"UVXf"} in UTF-8 encoding form";
-    else if (cp > 0x10FFFF)
-        fmt = "Can't represent restricted code point U-%08"UVXf" in UTF-8 encoding form";
     else if (cp >= 0xFDD0 && (cp <= 0xFDEF || (cp & 0xFFFE) == 0xFFFE))
         fmt = "Can't interchange noncharacter code point U+%"UVXf;
     else if ((cp & 0xF800) == 0xD800)

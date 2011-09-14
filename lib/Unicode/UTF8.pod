@@ -60,17 +60,9 @@ U+nFFFF (where n is from 0 to 10^16) and the values U+FDD0..U+FDEF.
 UTF-16 character encoding form. Surrogates consist of code points in the range 
 U+D800 to U+DFFF.
 
-=item Can't represent restricted code point U-%.8X in UTF-8 encoding form
-
-(F) Code points in the range U-00110000 to U-7FFFFFFF.
-
-ISO/IEC 10646 originally defined codespace up to U-7FFFFFFF. This was 
-restricted by JTC1/SC2/WG2 Resolution M38.6 (Restriction of encoding space)
-to U-0010FFFF in 2000.
-
 =item Can't represent super code point \x{%X} in UTF-8 encoding form
 
-(F) Code points in the range 2^31 to 2^64-1. Perl's extended codespace.
+(F) Code points greater than U+10FFFF. Perl's extended codespace.
 
 =back
 
