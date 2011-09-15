@@ -8,7 +8,7 @@ use IO::File    qw[SEEK_SET SEEK_END];
 use Test::Fatal qw[exception];
 
 BEGIN {
-    our @EXPORT_OK  = qw[ throws_ok pack_utf8 pack_overlong_utf8 rewind slurp ];
+    our @EXPORT_OK  = qw[ throws_ok warns_ok pack_utf8 pack_overlong_utf8 rewind slurp ];
     our %EXPORT_TAGS = (
         all => [ @EXPORT_OK ],
     );
@@ -70,6 +70,40 @@ sub throws_ok (&$;$) {
         }
     }
 }
+
+sub warns_ok (&$;$) {
+    my ($code, $regexp, $name) = @_;
+
+    require Test::Builder;
+    $Tester ||= Test::Builder->new;
+
+    my @warnings = ();
+    local $SIG{__WARN__} = sub { push @warnings, @_ };
+
+    my $e  = exception(\&$code);
+    my $ok = (!$e && @warnings == 1 && $warnings[0] =~ m/$regexp/);
+
+    $Tester->ok($ok, $name);
+
+    unless ($ok) {
+        if ($e) {
+            $Tester->diag("expected a warning but an exception was raised");
+            $Tester->diag("exception: " . $e);
+        }
+        elsif (@warnings == 0) {
+            $Tester->diag("expected a warning but none were issued");
+        }
+        elsif (@warnings >= 2) {
+            $Tester->diag("expected a warning but several were issued");
+            $Tester->diag("warnings: " . @warnings);
+        }
+        else {
+            $Tester->diag("expecting: " . $regexp);
+            $Tester->diag("found: " . $warnings[0]);
+        }
+    }
+}
+
 
 sub rewind(*) {
     seek($_[0], 0, SEEK_SET)
