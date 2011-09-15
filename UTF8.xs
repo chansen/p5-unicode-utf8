@@ -146,7 +146,7 @@ utf8_skip(const U8 *s, const STRLEN len) {
 }
 
 static void
-croak_unmappable(pTHX_ const UV cp) {
+warn_unmappable(pTHX_ const UV cp) {
     const char *fmt;
 
     if (cp > 0x10FFFF)
@@ -158,11 +158,11 @@ croak_unmappable(pTHX_ const UV cp) {
     else
         fmt = "Can't represent code point U+%04"UVXf" in UTF-8 encoding form";
 
-    Perl_croak(aTHX_ fmt, cp);
+    Perl_warner(aTHX_ packWARN(WARN_UTF8), fmt, cp);
 }
 
 static void
-croak_illformed(pTHX_ const U8 *s, STRLEN len, const char *enc, STRLEN pos) {
+warn_illformed(pTHX_ const U8 *s, STRLEN len, const char *enc, STRLEN pos) {
     static const char *fmt = "Can't decode ill-formed %s octet sequence <%s> in position %"UVuf;
     static const char *hex = "0123456789ABCDEF";
     char seq[20 * 3 + 4];
@@ -182,7 +182,86 @@ croak_illformed(pTHX_ const U8 *s, STRLEN len, const char *enc, STRLEN pos) {
     }
     *d = 0;
 
-    Perl_croak(aTHX_ fmt, enc, seq, (UV)pos);
+    Perl_warner(aTHX_ packWARN(WARN_UTF8), fmt, enc, seq, (UV)pos);
+}
+
+static void
+decode_utf8(pTHX_ const U8 *src, STRLEN len, STRLEN off, SV *dsv) {
+    const bool do_warn = ckWARN(WARN_UTF8);
+    STRLEN pos = 0;
+    STRLEN skip;
+    UV v;
+
+    do {
+        src += off;
+        len -= off;
+        pos += off;
+
+        skip = utf8_skip(src, len);
+        if (do_warn) {
+            if (utf8_unpack(src, skip, &v))
+                warn_unmappable(aTHX_ v);
+            else
+                warn_illformed(aTHX_ src, skip, "UTF-8", pos);
+        }
+
+        sv_catpvn(dsv, (const char *)src - off, off);
+        sv_catpvn(dsv,"\xEF\xBF\xBD", 3);
+
+        src += skip;
+        len -= skip;
+        pos += skip;
+
+        off = utf8_check(src, len);
+        if (off == len) {
+            sv_catpvn(dsv, (const char *)src, off);
+            break;
+        }
+    } while (len);
+}
+
+static void
+encode_utf8(pTHX_ const U8 *src, STRLEN len, STRLEN off, SV *dsv) {
+    const bool do_warn = ckWARN(WARN_UTF8);
+    STRLEN pos = 0;
+    STRLEN skip;
+    UV v;
+
+    do {
+        src += off;
+        len -= off;
+        pos += off;
+
+        v = utf8n_to_uvuni(src, len, &skip, UTF8_ALLOW_ANYUV|UTF8_CHECK_ONLY);
+        if (skip == (STRLEN) -1) {
+            skip = 1;
+            if (UTF8_IS_START(*src)) {
+                STRLEN n = UTF8SKIP(src);
+                if (n > len)
+                    n = len;
+                while (skip < n && UTF8_IS_CONTINUATION(src[skip]))
+                    skip++;
+            }
+            if (do_warn)
+                warn_illformed(aTHX_ src, skip, "UTF-X", pos);
+        }
+        else if (do_warn) {
+            warn_unmappable(aTHX_ v);
+        }
+
+        sv_catpvn(dsv, (const char *)src - off, off);
+        sv_catpvn(dsv,"\xEF\xBF\xBD", 3);
+
+        src += skip;
+        len -= skip;
+        pos += skip;
+
+        off = utf8_check(src, len);
+        if (off == len) {
+            sv_catpvn(dsv, (const char *)src, off);
+            break;
+        }
+    } while (len);
 }
 
 MODULE = Unicode::UTF8    PACKAGE = Unicode::UTF8
@@ -194,7 +273,6 @@ decode_utf8(octets)
     dXSTARG;
     const U8 *src;
     STRLEN len, off;
-    UV v;
   PPCODE:
     src = (const U8 *)SvPV_const(octets, len);
     if (SvUTF8(octets)) {
@@ -204,15 +282,11 @@ decode_utf8(octets)
         src = (const U8 *)SvPV_const(octets, len);
     }
     off = utf8_check(src, len);
-    if (off != len) {
-        src += off;
-        len -= off;
-        if (utf8_unpack(src, len, &v))
-            croak_unmappable(aTHX_ v);
-        else
-            croak_illformed(aTHX_ src, utf8_skip(src, len), "UTF-8", off);
-    }
-    sv_setpvn(TARG, (const char *)src, len);
+    if (off == len)
+        sv_setpvn(TARG, (const char *)src, len);
+    else
+        decode_utf8(aTHX_ src, len, off, TARG);
+
     SvUTF8_on(TARG);
     PUSHTARG;
 
@@ -249,28 +323,11 @@ encode_utf8(string)
         SvTAINT(TARG);
     }
     else {
-        UV v;
-        STRLEN slen;
         STRLEN off = utf8_check(src, len);
-        if (off != len) {
-            src += off;
-            len -= off;
-            v = utf8n_to_uvuni(src, len, &slen, UTF8_ALLOW_ANYUV|UTF8_CHECK_ONLY);
-            if (slen == (STRLEN) -1) {
-                slen = 1;
-                if (UTF8_IS_START(*src)) {
-                    STRLEN skip = UTF8SKIP(src);
-                    if (skip > len)
-                        skip = len;
-                    while (slen < skip && UTF8_IS_CONTINUATION(src[slen]))
-                        slen++;
-                }
-                croak_illformed(aTHX_ src, slen, "UTF-X", off);
-            }
-            else
-                croak_unmappable(aTHX_ v);
-        }
-        sv_setpvn(TARG, (const char *)src, len);
+        if (off == len)
+            sv_setpvn(TARG, (const char *)src, len);
+        else
+            encode_utf8(aTHX_ src, len, off, TARG);
     }
     SvUTF8_off(TARG);
     PUSHTARG;
