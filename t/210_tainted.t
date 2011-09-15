@@ -55,3 +55,4 @@ taint_start();
     ok(!is_tainted($a), '$a = encode_utf8(native string) is not tainted');
     ok(is_tainted($b), '$b = encode_utf8(native string) is tainted');
 }
+

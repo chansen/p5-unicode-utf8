@@ -24,7 +24,10 @@ foreach my $sequence (@INCOMPLETE) {
     my $name = sprintf 'decode_utf8(<%s>) incomplete UTF-8 sequence',
       join(' ', map { sprintf '%.2X', ord $_ } split //, $sequence);
 
-    throws_ok { decode_utf8($sequence) } qr/Can't decode ill-formed UTF-8 octet sequence/, $name;
+    throws_ok {
+        use warnings FATAL => 'utf8';
+        decode_utf8($sequence);
+    } qr/Can't decode ill-formed UTF-8 octet sequence/, $name;
 }
 
 foreach my $sequence (@INCOMPLETE) {
@@ -32,6 +35,9 @@ foreach my $sequence (@INCOMPLETE) {
       join(' ', map { sprintf '%.2X', ord $_ } split //, $sequence);
 
     _utf8_on($sequence);
-    throws_ok { encode_utf8($sequence) } qr/Can't decode ill-formed UTF-X octet sequence/, $name;
+    throws_ok {
+        use warnings FATAL => 'utf8';
+        encode_utf8($sequence);
+    } qr/Can't decode ill-formed UTF-X octet sequence/, $name;
 }
 

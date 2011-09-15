@@ -26,6 +26,9 @@ foreach my $cp (@SUPER) {
 
     my $string = do { no warnings 'utf8'; pack('U', $cp) };
 
-    throws_ok { encode_utf8($string) } qr/Can't represent super code point/, $name;
+    throws_ok { 
+        use warnings FATAL => 'utf8';
+        encode_utf8($string);
+    } qr/Can't represent super code point/, $name;
 }
 

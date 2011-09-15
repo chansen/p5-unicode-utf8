@@ -19,7 +19,10 @@ foreach my $cp (@SURROGATES) {
     my $name = sprintf 'decode_utf8(<%s>) surrogate U+%.4X',
       join(' ', map { sprintf '%.2X', ord $_ } split //, $octets), $cp;
 
-    throws_ok { decode_utf8($octets) } qr/Can't decode ill-formed UTF-8 octet sequence/, $name;
+    throws_ok {
+        use warnings FATAL => 'utf8';
+        decode_utf8($octets);
+    } qr/Can't decode ill-formed UTF-8 octet sequence/, $name;
 }
 
 foreach my $cp (@SURROGATES) {
@@ -28,6 +31,9 @@ foreach my $cp (@SURROGATES) {
 
     my $string = do { no warnings 'utf8'; pack('U', $cp) };
 
-    throws_ok { encode_utf8($string) } qr/Can't represent surrogate code point/, $name;
+    throws_ok { 
+        use warnings FATAL => 'utf8';
+        encode_utf8($string); 
+    } qr/Can't represent surrogate code point/, $name;
 }
 

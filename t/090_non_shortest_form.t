@@ -24,7 +24,10 @@ foreach my $cp (@tests) {
         my $name = sprintf 'decode_utf8(<%s>) non-shortest form representation of U+%.4X',
           join(' ', map { sprintf '%.2X', ord $_ } split //, $sequence), $cp;
 
-        throws_ok { decode_utf8($sequence) } qr/Can't decode ill-formed UTF-8 octet sequence/, $name;
+        throws_ok {
+            use warnings FATAL => 'utf8';
+            decode_utf8($sequence);
+        } qr/Can't decode ill-formed UTF-8 octet sequence/, $name;
     }
 }
 
@@ -34,7 +37,10 @@ foreach my $cp (@tests) {
           join(' ', map { sprintf '%.2X', ord $_ } split //, $sequence), $cp;
 
         _utf8_on($sequence);
-        throws_ok { encode_utf8($sequence) } qr/Can't decode ill-formed UTF-X octet sequence/, $name;
+        throws_ok { 
+            use warnings FATAL => 'utf8';
+            encode_utf8($sequence);
+        } qr/Can't decode ill-formed UTF-X octet sequence/, $name;
     }
 }
 
