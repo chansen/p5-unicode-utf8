@@ -21,7 +21,10 @@ for (my $cp = 0x00; $cp < 0x10FFFF; $cp += 0x1000) {
           join(' ', map { sprintf '%.2X', ord $_ } split //, $octets), $cp;
 
         my $got;
-        lives_ok { $got = decode_utf8($octets); } $name;
+        lives_ok {
+            use warnings FATAL => 'utf8';
+            $got = decode_utf8($octets);
+        } $name;
         is($got, $string, $name);
     }
 
@@ -30,7 +33,10 @@ for (my $cp = 0x00; $cp < 0x10FFFF; $cp += 0x1000) {
           $cp, $cp;
 
         my $got;
-        lives_ok { $got = encode_utf8($string); } $name;
+        lives_ok {
+            use warnings FATAL => 'utf8';
+            $got = encode_utf8($string);
+        } $name;
         is($got, $octets, $name);
     }
 }
@@ -50,13 +56,19 @@ for (my $cp = 0x00; $cp < 0x10FFFF; $cp += 0x1000) {
 
     {
         my $got;
-        lives_ok { $got = decode_utf8($octets); } 'decode_utf8(quickbrown.txt)';
+        lives_ok { 
+            use warnings FATAL => 'utf8';
+            $got = decode_utf8($octets);
+        } 'decode_utf8(quickbrown.txt)';
         is($got, $string, 'decode_utf8(quickbrown.txt) result');
     }
 
     {
         my $got;
-        lives_ok { $got = encode_utf8($string); } 'encode_utf8(quickbrown.txt)';
+        lives_ok { 
+            use warnings FATAL => 'utf8';
+            $got = encode_utf8($string);
+        } 'encode_utf8(quickbrown.txt)';
         is($got, $octets, 'encode_utf8(quickbrown.txt) result');
     }
 }
