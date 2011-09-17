@@ -37,10 +37,10 @@ static const U8 utf8_sequence_skip_len[0x100] = {
     1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, /* 0x90-0x9F */
     1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, /* 0xA0-0xAF */
     1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, /* 0xB0-0xBF */
-    2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2, /* 0xC0-0xCF */
+    1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2, /* 0xC0-0xCF */
     2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2, /* 0xD0-0xDF */
     3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3, /* 0xE0-0xEF */
-    4,4,4,4,4,4,4,4,5,5,5,5,6,6,1,1, /* 0xF0-0xFF */
+    4,4,4,4,4,1,1,1,1,1,1,1,1,1,1,1, /* 0xF0-0xFF */
 };
 
 static STRLEN
@@ -195,6 +195,9 @@ decode_utf8(pTHX_ const U8 *src, STRLEN len, STRLEN off, SV *dsv) {
     STRLEN skip;
     UV v;
 
+    SvUPGRADE(dsv, SVt_PV);
+    SvCUR_set(dsv, 0);
+
     do {
         src += off;
         len -= off;
@@ -229,6 +232,9 @@ encode_utf8(pTHX_ const U8 *src, STRLEN len, STRLEN off, SV *dsv) {
     STRLEN pos = 0;
     STRLEN skip;
     UV v;
+
+    SvUPGRADE(dsv, SVt_PV);
+    SvCUR_set(dsv, 0);
 
     do {
         src += off;
