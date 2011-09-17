@@ -1,6 +1,11 @@
+0.01_04 2011-09-17
+  - croak() if Perl's internal representation of wide characters is ill-formed.
+  - Fixed a bug bug in replacement handling.
+  - Added a test for replacement hanling.
+
 0.01_03 2011-09-16
   - Removed the "Can't represent restricted code point" error, code points 
-    above U+10FFFF is reported as "Can't represent super code point"
+    above U+10FFFF is reported as "Can't represent super code point".
   - Instead of just croaking use the 'utf8' warnings category and 
     leave the choise of error reporting to the user.
   - Maximal subpart of an ill-formed subsequence is replaced with U+FFFD as 
