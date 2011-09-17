@@ -36,7 +36,6 @@ foreach my $sequence (@INCOMPLETE) {
 
     _utf8_on($sequence);
     throws_ok {
-        use warnings FATAL => 'utf8';
         encode_utf8($sequence);
     } qr/Can't decode ill-formed UTF-X octet sequence/, $name;
 }
