@@ -44,11 +44,6 @@ None by default. All functions can be exported using the C<:all> tag or individu
 
 (F) Wide character in octets.
 
-=item Can't decode ill-formed UTF-X octet sequence <%s> in position %u
-
-(F) Encountered an ill-formed octet sequence in Perl's internal representation 
-of wide characters.
-
 =item Can't decode ill-formed UTF-8 octet sequence <%s> in position %u
 
 (W utf8) Encountered an ill-formed UTF-8 octet sequence. <%s> contains a 
@@ -69,6 +64,12 @@ U+D800 to U+DFFF.
 =item Can't represent super code point \x{%X} in UTF-8 encoding form
 
 (W utf8) Code points greater than U+10FFFF. Perl's extended codespace.
+
+=item Can't decode ill-formed UTF-X octet sequence <%s> in position %u
+
+(F) Encountered an ill-formed octet sequence in Perl's internal representation 
+of wide characters.
+
 
 =back
 
