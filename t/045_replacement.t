@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 18;
+use Test::More tests => 21;
 
 BEGIN {
     use_ok('Unicode::UTF8', qw[ decode_utf8 ]);
@@ -12,6 +12,9 @@ BEGIN {
 my $replacement = "\x{FFFD}";
 
 my @tests = (
+    [ "\x80",               1 ],
+    [ "\x80\x80",           2 ],
+    [ "\x80\x80\x80",       3 ],
     [ "\xC0\x80",           2 ],
     [ "\xC1\x80",           2 ],
     [ "\xE0\x80\x80",       1 ],
