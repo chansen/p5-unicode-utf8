@@ -3,6 +3,7 @@ use strict;
 use warnings;
 
 use Benchmark     qw[];
+use Config        qw[%Config];
 use Encode        qw[];
 use FindBin       qw[$Bin];
 use IO::Dir       qw[];
@@ -12,7 +13,7 @@ my $enc = Encode::find_encoding('UTF-8')
   || die(q/find_encoding('UTF-8')/);
 
 my $dir = do {
-    -d "$Bin/data" ? "$Bin/data" : die q<Could not find path to benchamrks/data directory>;
+    -d "$Bin/data" ? "$Bin/data" : die q<Could not find path to benchmarks/data directory>;
 };
 
 my @docs = do {
@@ -21,7 +22,7 @@ my @docs = do {
     sort grep { /^[a-z]{2}\.txt/ } $d->read;
 };
 
-printf "perl:          %s\n", $];
+printf "perl:          %s (%s %s)\n", $], @Config{qw[osname osvers]};
 printf "Encode:        %s\n", Encode->VERSION;
 printf "Unicode::UTF8: %s\n", Unicode::UTF8->VERSION;
 
@@ -53,7 +54,7 @@ foreach my $doc (@docs) {
     printf "\n\n%s: code points: %d (%s)\n", $doc, $sum, join ' ', @out;
 
     Benchmark::cmpthese( -10, {
-        'U::U::decode' => sub {
+        'Unicode::UTF8' => sub {
             my $v = Unicode::UTF8::decode_utf8($src);
         },
         'Encode.pm relax' => sub {
