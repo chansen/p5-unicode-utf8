@@ -24,25 +24,6 @@ static const U8 utf8_sequence_len[0x100] = {
     4,4,4,4,4,0,0,0,0,0,0,0,0,0,0,0, /* 0xF0-0xFF */
 };
 
-static const U8 utf8_sequence_skip_len[0x100] = {
-    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, /* 0x00-0x0F */
-    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, /* 0x10-0x1F */
-    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, /* 0x20-0x2F */
-    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, /* 0x30-0x3F */
-    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, /* 0x40-0x4F */
-    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, /* 0x50-0x5F */
-    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, /* 0x60-0x6F */
-    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, /* 0x70-0x7F */
-    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, /* 0x80-0x8F */
-    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, /* 0x90-0x9F */
-    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, /* 0xA0-0xAF */
-    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, /* 0xB0-0xBF */
-    1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2, /* 0xC0-0xCF */
-    2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2, /* 0xD0-0xDF */
-    3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3, /* 0xE0-0xEF */
-    4,4,4,4,4,1,1,1,1,1,1,1,1,1,1,1, /* 0xF0-0xFF */
-};
-
 static STRLEN
 utf8_check(const U8 *s, const STRLEN len) {
     const U8 *p = s;
@@ -135,8 +116,16 @@ utf8_unpack(const U8 *s, const STRLEN len, UV *usv) {
 
 static STRLEN
 utf8_skip(const U8 *s, const STRLEN len) {
-    STRLEN i, n = utf8_sequence_skip_len[*s];
+    STRLEN i, n = utf8_sequence_len[*s];
 
+    if (n < 1 || len < 2)
+        return 1;
+    switch (s[0]) {
+        case 0xE0: if ((s[1] & 0xE0) == 0x80) return 1; break;
+        case 0xED: if ((s[1] & 0xE0) == 0xA0) return 1; break;
+        case 0xF0: if ((s[1] & 0xF0) == 0x80) return 1; break;
+        case 0xF4: if ((s[1] & 0xF0) != 0x80) return 1; break;
+    }
     if (n > len)
         n = len;
     for (i = 1; i < n; i++)

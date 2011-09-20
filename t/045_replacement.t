@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 21;
+use Test::More tests => 25;
 
 BEGIN {
     use_ok('Unicode::UTF8', qw[ decode_utf8 ]);
@@ -17,9 +17,13 @@ my @tests = (
     [ "\x80\x80\x80",       3 ],
     [ "\xC0\x80",           2 ],
     [ "\xC1\x80",           2 ],
-    [ "\xE0\x80\x80",       1 ],
-    [ "\xED\xA0\x80",       1 ],
-    [ "\xF0\x80\x80\x80",   1 ],
+    [ "\xE0\x80\x80",       3 ],
+    [ "\xE0\x9F\x80",       3 ],
+    [ "\xED\xA0\x80",       3 ],
+    [ "\xED\xBF\x80",       3 ],
+    [ "\xF0\x80\x80\x80",   4 ],
+    [ "\xF0\x8F\x80\x80",   4 ],
+    [ "\xF4\x90\x80\x80",   4 ],
     [ "\xF5\x80\x80",       3 ],
     [ "\xF5\x80\x80\x80",   4 ],
     [ "\xF6\x80\x80",       3 ],
