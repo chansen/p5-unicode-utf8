@@ -1,3 +1,19 @@
+0.01_05 2011-09-20
+  - Correct maximal subpart implementation
+    An initial subsequence of a ill-formed sequence is not maximal subpart.
+
+    <C0 80>       -> <FFFD FFFD>
+    <ED A0 80>    -> <FFFD FFFD FFFD>
+    <EF BF BF>    -> <FFFD>
+    <F4 80 80>    -> <FFFD>
+    <F4 90 80 80> -> <FFFD FFFD FFFD FFFD>
+
+    Unicode v6.0:
+    D93b Maximal subpart of an ill-formed subsequence: The longest code unit
+    subsequence starting at an unconvertible offset that is either:
+      a. the initial subsequence of a well-formed code unit sequence, or
+      b. a subsequence of length one.
+
 0.01_04 2011-09-17
   - croak if Perl's internal representation of wide characters is ill-formed.
   - Fixed a bug in replacement handling.
