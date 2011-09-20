@@ -21,15 +21,15 @@ defined by Unicode and ISO/IEC 10646:2011.
 Returns an decoded representation of C<$octets> in UTF-8 encoding as a character
 string.
 
-Issues a warning if C<$octets> contains an ill-formed UTF-8 sequence or an
-encoded code point which can't be interchanged.
+Issues a warning if C<$octets> contains ill-formed UTF-8 sequences or encoded 
+code points which can't be interchanged.
 
 =head2 encode_utf8($string)
 
 Returns an encoded representation of C<$string> in UTF-8 encoding as an octet
 string.
 
-Issues a warning if C<$string> contains a code point which can't be interchanged
+Issues a warning if C<$string> contains code points which can't be interchanged
 or represented in UTF-8 encoding form.
 
 =head1 EXPORTS
