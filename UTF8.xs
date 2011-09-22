@@ -135,19 +135,19 @@ utf8_skip(const U8 *s, const STRLEN len) {
 }
 
 static void
-report_unmappable(pTHX_ const UV cp) {
+report_unmappable(pTHX_ const UV cp, const STRLEN pos) {
     const char *fmt;
 
     if (cp > 0x10FFFF)
-        fmt = "Can't represent super code point \\x{%"UVXf"} in UTF-8 encoding form";
+        fmt = "Can't represent super code point \\x{%"UVXf"} at position %"UVuf" in UTF-8 encoding form";
     else if (cp >= 0xFDD0 && (cp <= 0xFDEF || (cp & 0xFFFE) == 0xFFFE))
-        fmt = "Can't interchange noncharacter code point U+%"UVXf;
+        fmt = "Can't interchange noncharacter code point U+%"UVXf" at position %"UVuf;
     else if ((cp & 0xF800) == 0xD800)
-        fmt = "Can't represent surrogate code point U+%"UVXf" in UTF-8 encoding form";
+        fmt = "Can't represent surrogate code point U+%"UVXf" at position %"UVuf" in UTF-8 encoding form";
     else
-        fmt = "Can't represent code point U+%04"UVXf" in UTF-8 encoding form";
+        fmt = "Can't represent code point U+%04"UVXf" at position %"UVuf" in UTF-8 encoding form";
 
-    Perl_warner(aTHX_ packWARN(WARN_UTF8), fmt, cp);
+    Perl_warner(aTHX_ packWARN(WARN_UTF8), fmt, cp, (UV)pos);
 }
 
 static void
@@ -195,7 +195,7 @@ decode_utf8(pTHX_ const U8 *src, STRLEN len, STRLEN off, SV *dsv) {
         skip = utf8_skip(src, len);
         if (do_warn) {
             if (utf8_unpack(src, skip, &v))
-                report_unmappable(aTHX_ v);
+                report_unmappable(aTHX_ v, pos);
             else
                 report_illformed(aTHX_ src, skip, "UTF-8", pos, FALSE);
         }
@@ -228,7 +228,7 @@ encode_utf8(pTHX_ const U8 *src, STRLEN len, STRLEN off, SV *dsv) {
     do {
         src += off;
         len -= off;
-        pos += off;
+        pos += utf8_length(aTHX_ src - off, src);
 
         v = utf8n_to_uvuni(src, len, &skip, UTF8_ALLOW_ANYUV|UTF8_CHECK_ONLY);
         if (skip == (STRLEN) -1) {
@@ -243,14 +243,14 @@ encode_utf8(pTHX_ const U8 *src, STRLEN len, STRLEN off, SV *dsv) {
             report_illformed(aTHX_ src, skip, "UTF-X", pos, TRUE);
         }
         if (do_warn)
-            report_unmappable(aTHX_ v);
+            report_unmappable(aTHX_ v, pos);
 
         sv_catpvn(dsv, (const char *)src - off, off);
         sv_catpvn(dsv,"\xEF\xBF\xBD", 3);
 
         src += skip;
         len -= skip;
-        pos += skip;
+        pos += 1;
 
         off = utf8_check(src, len);
         if (off == len) {
