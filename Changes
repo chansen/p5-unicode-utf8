@@ -1,3 +1,7 @@
+0.01_06 2011-09-24
+  - Report character position in encode_utf8() warning messages
+  - Added a comparison with Encode.pm
+
 0.01_05 2011-09-20
   - Correct maximal subpart implementation
     An initial subsequence of a ill-formed sequence is not maximal subpart.
