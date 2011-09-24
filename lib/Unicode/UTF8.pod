@@ -74,7 +74,7 @@ of wide characters.
 
 =head1 COMPARISON
 
-Comparison between Encode.pm's UTF-8 (E) and C<Unicode::UTF8> (U).
+Comparison between C<Encode>'s UTF-8 (E) and C<Unicode::UTF8> (U).
 
 =head2 Noncharacters
 
