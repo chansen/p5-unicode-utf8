@@ -28,12 +28,12 @@ printf "Unicode::UTF8: %s\n", Unicode::UTF8->VERSION;
 
 foreach my $doc (@docs) {
 
-    my $src = do {
+    my $octets = do {
         open my $fh, '<:raw', "$dir/$doc" or die $!;
         local $/; <$fh>;
     };
 
-    my $str = Unicode::UTF8::decode_utf8($src);
+    my $string = Unicode::UTF8::decode_utf8($octets);
 
     my @ranges = (
         [    0x00,     0x7F, qr/[\x{00}-\x{7F}]/        ],
@@ -44,23 +44,23 @@ foreach my $doc (@docs) {
 
     my @out;
     foreach my $r (@ranges) {
-        my ($beg, $end, $regexp) = @$r;
-        my $count = () = $str =~ m/$regexp/g;
+        my ($start, $end, $regexp) = @$r;
+        my $count = () = $string =~ m/$regexp/g;
         push @out, sprintf "U+%.4X..U+%.4X: %d", $start, $end, $count
           if $count;
     }
 
-    printf "\n\n%s: code points: %d (%s)\n", $doc, length $str, join ' ', @out;
+    printf "\n\n%s: code points: %d (%s)\n", $doc, length $string, join ' ', @out;
 
     Benchmark::cmpthese( -10, {
         'Unicode::UTF8' => sub {
-            my $v = Unicode::UTF8::decode_utf8($src);
+            my $v = Unicode::UTF8::decode_utf8($octets);
         },
         'Encode.pm relax' => sub {
-            my $v = Encode::decode_utf8($src);
+            my $v = Encode::decode_utf8($octets);
         },
         'Encode.pm strict' => sub {
-            my $v = $enc->decode($src, Encode::FB_CROAK|Encode::LEAVE_SRC);
+            my $v = $enc->decode($octets, Encode::FB_CROAK|Encode::LEAVE_SRC);
         },
     });
 }
