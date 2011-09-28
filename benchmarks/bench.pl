@@ -42,16 +42,15 @@ foreach my $doc (@docs) {
         [ 0x10000, 0x10FFFF, qr/[\x{10000}-\x{10FFFF}]/ ],
     );
 
-    my $sum = 0;
     my @out;
     foreach my $r (@ranges) {
-        my ($s, $e, $regexp) = @$r;
-        my $c = () = $str =~ m/$regexp/g;
-        push @out, sprintf "U+%.4X..U+%.4X: %d", $s, $e, $c;
-        $sum += $c;
+        my ($beg, $end, $regexp) = @$r;
+        my $count = () = $str =~ m/$regexp/g;
+        push @out, sprintf "U+%.4X..U+%.4X: %d", $start, $end, $count
+          if $count;
     }
 
-    printf "\n\n%s: code points: %d (%s)\n", $doc, $sum, join ' ', @out;
+    printf "\n\n%s: code points: %d (%s)\n", $doc, length $str, join ' ', @out;
 
     Benchmark::cmpthese( -10, {
         'Unicode::UTF8' => sub {
