@@ -228,7 +228,7 @@ encode_utf8(pTHX_ const U8 *src, STRLEN len, STRLEN off, SV *dsv) {
     do {
         src += off;
         len -= off;
-        pos += utf8_length(aTHX_ src - off, src);
+        pos += utf8_length(src - off, src);
 
         v = utf8n_to_uvuni(src, len, &skip, UTF8_ALLOW_ANYUV|UTF8_CHECK_ONLY);
         if (skip == (STRLEN) -1) {
