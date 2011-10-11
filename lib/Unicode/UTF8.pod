@@ -14,6 +14,40 @@ Unicode::UTF8 - Encoding and decoding of UTF-8 encoding form.
 This module provides functions to encode and decode UTF-8 encoding form as 
 defined by Unicode and ISO/IEC 10646:2011.
 
+Here is a summary of features for comparison with L<Encode>:
+
+=over 4
+
+=item *
+
+simple API which integrates with warnings category C<utf8>
+
+=item *
+
+recognizes all noncharacters regardless of perl version
+
+=item *
+
+implements Unicode's recommended practice for using U+FFFD
+
+=item *
+
+helpful diagnostics in warnings messages
+
+=item *
+
+detects and reports inconsistency in perl's internal encoding (UTF-X)
+
+=item *
+
+preserves taintedness of decoded C<$octets> or encoded C<$string>
+
+=item *
+
+increased performance ~ 500% to 2000% L<https://github.com/chansen/p5-unicode-utf8/blob/master/benchmarks/bench.pl>
+
+=back
+
 =head1 FUNCTIONS
 
 =head2 decode_utf8($octets)
@@ -71,73 +105,6 @@ U+D800 to U+DFFF.
 of wide characters.
 
 =back
-
-=head1 COMPARISON
-
-Comparison between C<Encode>'s UTF-8 (E) and C<Unicode::UTF8> (U).
-
-=head2 Noncharacters
-
-C<Unicode::UTF8> recognizes all noncharacters regardless of perl version.
-C<Encode> only recognize U+FFFF on perl versions below 5.14.
-
-=head2 Replacement U+FFFD
-
-C<Unicode::UTF8> implements Unicode's recommended practice for using U+FFFD.
-
-C<"\xF1\x80\x80">:
-
-U) C<"\x{FFFD}">
-
-E) C<"\x{FFFD}\x{FFFD}\x{FFFD}">
-
-=head2 Diagnostics
-
-=over 4
-
-=item C<"\xF1\x80\x80">:
-
-U) Can't decode ill-formed UTF-8 octet sequence <F1 80 80> in position 0 [...]
-
-E) utf8 "\xF1" does not map to Unicode [...]
-
-=item C<"\xEF\xBF\xBF">:
-
-U) Can't interchange noncharacter code point U+FFFF in position 0 [...]
-
-E) utf8 "\xFFFF" does not map to Unicode [...]
-
-=item C<"\x{D800}">:
-
-U) Can't represent surrogate code point U+D800 at position 0 in UTF-8 encoding form [...]
-
-E) "\x{d800}" does not map to utf8 [...]
-
-=item C<"\x{110000}">:
-
-U) Can't represent super code point \x{110000} at position 0 in UTF-8 encoding form [...]
-
-E) "\x{110000}" does not map to utf8 [...]
-
-=item C<"\x{FFFF}">:
-
-U) Can't interchange noncharacter code point U+FFFF at position 0 [...]
-
-E) "\x{ffff}" does not map to utf8 [...]
-
-=back
-
-=head2 Taint mode
-
-C<Unicode::UTF8> preserves taintedness, C<Encode> does not.
-
-    $tainted_string = decode_utf8($tainted_octets);
-    $tainted_octets = encode_utf8($tainted_string);
-
-=head2 Performance
-
-C<Unicode::UTF8> is ~ 500% to 2000% faster than C<Encode>.
-L<https://github.com/chansen/p5-unicode-utf8/blob/master/benchmarks/bench.pl>
 
 =head1 SEE ALSO
 
