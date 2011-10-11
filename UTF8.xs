@@ -230,7 +230,7 @@ encode_utf8(pTHX_ const U8 *src, STRLEN len, STRLEN off, SV *dsv) {
         len -= off;
         pos += utf8_length(src - off, src);
 
-        v = utf8n_to_uvuni(src, len, &skip, UTF8_ALLOW_ANYUV|UTF8_CHECK_ONLY);
+        v = utf8n_to_uvuni(src, len, &skip, (UTF8_ALLOW_ANYUV|UTF8_CHECK_ONLY) & ~UTF8_ALLOW_LONG);
         if (skip == (STRLEN) -1) {
             skip = 1;
             if (UTF8_IS_START(*src)) {
