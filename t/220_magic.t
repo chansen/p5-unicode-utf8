@@ -7,7 +7,7 @@ use Test::More;
 BEGIN {
     eval 'use Variable::Magic qw[cast wizard];';
     plan skip_all => 'Variable::Magic is required for this test' if $@;
-    plan tests => 5;
+    plan tests => 9;
 }
 
 BEGIN {
@@ -15,44 +15,54 @@ BEGIN {
                                 encode_utf8 ]);
 }
 
-my ($nget, $nset);
+my ($string_get,
+    $string_set,
+    $octets_get,
+    $octets_set);
 
-my $wizard = wizard get => sub { $nget++ },
-                    set => sub { $nset++ };
+my $w_string = wizard get => sub { $string_get++ },
+                      set => sub { $string_set++ };
+
+my $w_octets = wizard get => sub { $octets_get++ },
+                      set => sub { $octets_set++ };
 
 
-($nget, $nset) = (0, 0);
+($string_get, $string_set, $octets_get, $octets_set) = (0, 0, 0, 0);
 
 {
     my $octets = "\x80\x80\x80";
     my $string;
 
-    cast $octets, $wizard;
-    cast $string, $wizard;
+    cast $octets, $w_octets;
+    cast $string, $w_string;
     {
         no warnings 'utf8';
         $string = decode_utf8($octets);
     }
 
-    is($nget, 1, 'decode_utf8() GET magic');
-    is($nset, 1, 'decode_utf8() SET magic');
+    is($octets_get, 1, 'decode_utf8() $octets GET magic');
+    is($octets_set, 0, 'decode_utf8() $octets SET magic');
+    is($string_get, 0, 'decode_utf8() $string GET magic');
+    is($string_set, 1, 'decode_utf8() $string SET magic');
 }
 
-($nget, $nset) = (0, 0);
+($string_get, $string_set, $octets_get, $octets_set) = (0, 0, 0, 0);
 
 {
     my $string = "\x{110000}\x{110000}\x{110000}";
     my $octets;
 
-    cast $octets, $wizard;
-    cast $string, $wizard;
+    cast $octets, $w_octets;
+    cast $string, $w_string;
     {
         no warnings 'utf8';
         $octets = encode_utf8($string);
     }
 
-    is($nget, 1, 'encode_utf8() GET magic');
-    is($nset, 1, 'encode_utf8() SET magic');
+    is($octets_get, 0, 'encode_utf8() $octets GET magic');
+    is($octets_set, 1, 'encode_utf8() $octets SET magic');
+    is($string_get, 1, 'encode_utf8() $string GET magic');
+    is($string_set, 0, 'encode_utf8() $string SET magic');
 }
 
 
