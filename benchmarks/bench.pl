@@ -56,10 +56,7 @@ foreach my $doc (@docs) {
         'Unicode::UTF8' => sub {
             my $v = Unicode::UTF8::decode_utf8($octets);
         },
-        'Encode.pm relax' => sub {
-            my $v = Encode::decode_utf8($octets);
-        },
-        'Encode.pm strict' => sub {
+        'Encode' => sub {
             my $v = $enc->decode($octets, Encode::FB_CROAK|Encode::LEAVE_SRC);
         },
     });
