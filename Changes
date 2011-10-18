@@ -1,6 +1,9 @@
+0.01_08 2011-10-18
+  - Refactored internal function utf8_check() to increase performance 
+
 0.01_07 2011-10-11
   - Fixed detection of non-shortest form UTF-X on perl versions <= 5.8.6
-  - Fixed Perl_utf8_length() invocation, don't pass the interpreter context
+  - Fixed utf8_length() invocation, don't pass the interpreter context
   - Shortened the Encode.pm comparison
 
 0.01_06 2011-09-24
