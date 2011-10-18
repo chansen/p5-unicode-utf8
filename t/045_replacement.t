@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 30;
+use Test::More tests => 36;
 
 BEGIN {
     use_ok('Unicode::UTF8', qw[ decode_utf8 ]);
@@ -41,12 +41,18 @@ my @tests = (
     [ "\xFD\x80",           2 ],
     [ "\xFE\x80",           2 ],
     [ "\xFF\x80",           2 ],
+    [ "\xC2\x20\x80",       "\x{FFFD}\x20\x{FFFD}" ],
+    [ "\xDF\x20\x80",       "\x{FFFD}\x20\x{FFFD}"],
+    [ "\xE0\xA0\x20",       "\x{FFFD}\x20" ],
+    [ "\xEF\x80\x20",       "\x{FFFD}\x20" ],
+    [ "\xF0\x90\x20\x80",   "\x{FFFD}\x20\x{FFFD}" ],
+    [ "\xF4\x80\x20\x80",   "\x{FFFD}\x20\x{FFFD}" ],
 );
 
 foreach my $test (@tests) {
-    my ($octets, $n) = @$test;
+    my ($octets, $x) = @$test;
 
-    my $exp = $replacement x $n;
+    my $exp = $x =~ /\A[0-9]/ ? $replacement x $x : $x;
     my $got = do {
         no warnings 'utf8';
         decode_utf8($octets);
