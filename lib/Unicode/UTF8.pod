@@ -44,7 +44,7 @@ preserves taintedness of decoded C<$octets> or encoded C<$string>
 
 =item *
 
-increased performance ~ 500% to 2000% L<https://github.com/chansen/p5-unicode-utf8/blob/master/benchmarks/bench.pl>
+much better performance ~ +600% L<https://github.com/chansen/p5-unicode-utf8/blob/master/benchmarks/bench.pl>
 
 =back
 

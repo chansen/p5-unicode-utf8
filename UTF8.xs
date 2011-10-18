@@ -28,48 +28,56 @@ static STRLEN
 utf8_check(const U8 *s, const STRLEN len) {
     const U8 *p = s;
     const U8 *e = s + len;
-    U8 n, i;
     U32 v;
 
     while (p < e - 4) {
         while (p < e - 4 && *p < 0x80)
             p++;
 
-        n = utf8_sequence_len[*p];
-
       check:
-        for (i = 1; i < n; i++)
-            if ((p[i] & 0xC0) != 0x80)
-                goto done;
-
-        switch (n) {
+        switch (utf8_sequence_len[*p]) {
             case 0:
                 goto done;
+            case 1:
+                p += 1;
+                break;
+            case 2:
+                if ((p[1] & 0xC0) != 0x80)
+                    goto done;
+                p += 2;
+                break;
             case 3:
-                v = ((UV)(p[0] & 0x0F) << 12)
-                  | ((UV)(p[1] & 0x3F) <<  6)
-                  | ((UV)(p[2] & 0x3F));
-                if (v < 0x800 || (v & 0xF800) == 0xD800)
+                v = ((U32)p[0] << 16)
+                  | ((U32)p[1] <<  8)
+                  | ((U32)p[2]);
+                if ((v & 0x00F0C0C0) != 0x00E08080
+                    /* Non-shortest form */
+                    || v < 0x00E0A080
+                    /* Surrogates U+D800..U+DFFF */
+                    || (v & 0x00EFA080) == 0x00EDA080
+                    /* Non-characters U+FDD0..U+FDEF, U+FFFE and U+FFFF */
+                    || (v >= 0x00EFB790 && (v <= 0x00EFB7AF || v >= 0x00EFBFBE)))
                     goto done;
-                /* Non-characters U+FDD0..U+FDEF, U+FFFE and U+FFFF */
-                if (v >= 0xFDD0 && (v <= 0xFDEF || (v & 0xFFFE) == 0xFFFE))
-                    goto done;
+                p += 3;
                 break;
             case 4:
-                v = ((UV)(p[0] & 0x07) << 18)
-                  | ((UV)(p[1] & 0x3F) << 12)
-                  | ((UV)(p[2] & 0x3F) <<  6)
-                  | ((UV)(p[3] & 0x3F));
-                if (v < 0x10000 || v > 0x10FFFF)
+                v = ((U32)p[0] << 24)
+                  | ((U32)p[1] << 16)
+                  | ((U32)p[2] <<  8)
+                  | ((U32)p[3]);
+                if ((v & 0xF8C0C0C0) != 0xF0808080
+                    /* Non-shortest form */
+                    || v < 0xF0908080 
+                    /* Greater than U+10FFFF */
+                    || v > 0xF48FBFBF
+                    /* Non-characters U+nFFFE and U+nFFFF on plane 1-16 */
+                    || (v & 0x000FBFBE) == 0x000FBFBE)
                     goto done;
-                /* Non-characters U+nFFFE and U+nFFFF on plane 1-16 */
-                if ((v & 0xFFFE) == 0xFFFE)
-                    goto done;
+                p += 4;
                 break;
         }
-        p += n;
     }
-    if (p < e && p + (n = utf8_sequence_len[*p]) <= e)
+    if (p < e && p + utf8_sequence_len[*p] <= e)
         goto check;
   done:
     return p - s;
