@@ -186,7 +186,7 @@ report_illformed(pTHX_ const U8 *s, STRLEN len, const char *enc, STRLEN pos, con
 }
 
 static void
-decode_utf8(pTHX_ const U8 *src, STRLEN len, STRLEN off, SV *dsv) {
+utf8_decode_offset(pTHX_ SV *dsv, const U8 *src, STRLEN len, STRLEN off) {
     const bool do_warn = ckWARN(WARN_UTF8);
     STRLEN pos = 0;
     STRLEN skip;
@@ -224,7 +224,7 @@ decode_utf8(pTHX_ const U8 *src, STRLEN len, STRLEN off, SV *dsv) {
 }
 
 static void
-encode_utf8(pTHX_ const U8 *src, STRLEN len, STRLEN off, SV *dsv) {
+utf8_encode_offset(pTHX_ SV *dsv, const U8 *src, STRLEN len, STRLEN off) {
     const bool do_warn = ckWARN(WARN_UTF8);
     STRLEN pos = 0;
     STRLEN skip;
@@ -289,7 +289,7 @@ decode_utf8(octets)
     if (off == len)
         sv_setpvn(TARG, (const char *)src, len);
     else
-        decode_utf8(aTHX_ src, len, off, TARG);
+        utf8_decode_offset(aTHX_ TARG, src, len, off);
 
     SvUTF8_on(TARG);
     PUSHTARG;
@@ -331,7 +331,7 @@ encode_utf8(string)
         if (off == len)
             sv_setpvn(TARG, (const char *)src, len);
         else
-            encode_utf8(aTHX_ src, len, off, TARG);
+            utf8_encode_offset(aTHX_ TARG, src, len, off);
     }
     SvUTF8_off(TARG);
     PUSHTARG;
