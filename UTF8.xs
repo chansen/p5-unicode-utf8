@@ -343,6 +343,8 @@ utf8_encode_offset(pTHX_ SV *dsv, const U8 *src, STRLEN len, STRLEN off, CV *fal
 
 MODULE = Unicode::UTF8    PACKAGE = Unicode::UTF8
 
+PROTOTYPES: DISABLE
+
 void
 decode_utf8(octets, fallback=NULL)
     SV *octets
