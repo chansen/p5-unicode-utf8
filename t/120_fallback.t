@@ -3,10 +3,33 @@
 use strict;
 use warnings;
 
-use Test::More tests => 6;
+use Test::More tests => 12;
 
 BEGIN {
     use_ok('Unicode::UTF8', qw[ decode_utf8 encode_utf8 ]);
+}
+
+{
+    my $octets = "\x80 \xE2\x98\xBA \xF4\x80\x80 \xE0\x80\x80";
+    my @exp    = ("\x80", "\xF4\x80\x80", "\xE0", "\x80", "\x80");
+    my $count  = 0;
+
+    my $fallback = sub {
+        my $got  = shift;
+        my $exp  = shift @exp;
+        my $name = sprintf '$sequence eq <%s>',
+          join(' ', map { sprintf '%.4X', ord } split //, $exp);
+
+        is($got, $exp, $name);
+        $count++;
+    };
+
+    {
+        no warnings 'utf8';
+        decode_utf8($octets, $fallback);
+    }
+
+    is($count, 5, "decode fallback invoked 5 times");
 }
 
 {
