@@ -3,95 +3,69 @@
 use strict;
 use warnings;
 
-use Test::More tests => 5;
+use Test::More tests => 6;
 
 BEGIN {
     use_ok('Unicode::UTF8', qw[ decode_utf8 encode_utf8 ]);
 }
 
 {
-    my $octets = "\x80 Foo \xE2\x98\xBA \xE0\x80\x80";
-    my $fallback = sub {
-        return "\x{FFFD}";
-    };
+    my @tests = (
+        [ "\x80 Foo \xE2\x98\xBA \xE0\x80\x80",
+          "\x{FFFD} Foo \x{263A} \x{FFFD}\x{FFFD}\x{FFFD}",
+          sub { return "\x{FFFD}" },
+        ],
+        [ "\x80 Foo \xE2\x98\xBA \xE0\x80\x80",
+          "\x80 Foo \x{263A} \xE0\x80\x80",
+          sub { return $_[0] }
+        ],
+    );
 
-    my $got = do {
-        no warnings 'utf8';
-        decode_utf8($octets, $fallback);
-    };
+    foreach my $test (@tests) {
+        my ($octets, $exp, $fallback) = @$test;
 
-    my $exp = "\x{FFFD} Foo \x{263A} \x{FFFD}\x{FFFD}\x{FFFD}";
+        my $name = sprintf 'decode_utf8(<%s>) eq <%s>',
+          join(' ', map { sprintf '%.2X', ord } split //, $octets),
+          join(' ', map { sprintf '%.4X', ord } split //, $exp);
 
-    my $name = sprintf 'decode_utf8(<%s>, $fallback1) eq <%s>',
-      join(' ', map { sprintf '%.2X', ord } split //, $octets),
-      join(' ', map { sprintf '%.4X', ord } split //, $exp);
+        my $got = do {
+            no warnings 'utf8';
+            decode_utf8($octets, $fallback);
+        };
 
-    is($got, $exp, $name);
+        is($got, $exp, $name);
+    }
 }
 
 {
-    my $octets   = "\x80 Foo \xE2\x98\xBA \xE0\x80\x80";
-    my $fallback = sub {
-        return $_[0];
-    };
+    my @tests = (
+        [ "\x{110000}",
+          0x110000,
+          sub { return $_[0] },
+        ],
+        [ "\x{110000} Foo \x{263A} \x{110000}",
+          "\xEF\xBF\xBD Foo \xE2\x98\xBA \xEF\xBF\xBD",
+          sub { return "\x{FFFD}" },
+        ],
+        [ "\x{110000} Foo \x{263A} \x{110000}",
+          " Foo \xE2\x98\xBA ",
+          sub { return '' }
+        ],
+    );
 
-    my $got = do {
-        no warnings 'utf8';
-        decode_utf8($octets, $fallback);
-    };
+    foreach my $test (@tests) {
+        my ($string, $exp, $fallback) = @$test;
 
-    my $exp = "\x80 Foo \x{263A} \xE0\x80\x80";
+        my $name = sprintf 'encode_utf8(<%s>) eq <%s>',
+          join(' ', map { sprintf '%.2X', ord } split //, $string),
+          join(' ', map { sprintf '%.4X', ord } split //, $exp);
 
-    my $name = sprintf 'decode_utf8(<%s>, $fallback2) eq <%s>',
-      join(' ', map { sprintf '%.2X', ord } split //, $octets),
-      join(' ', map { sprintf '%.4X', ord } split //, $exp);
+        my $got = do {
+            no warnings 'utf8';
+            encode_utf8($string, $fallback);
+        };
 
-    is($got, $exp, $name);
-}
-
-{
-    my $string = do {
-        no warnings 'utf8';
-        "\x{110000} Foo \x{263A} \x{110000}";
-    };
-    my $fallback = sub {
-        return "\x{FFFD}";
-    };
-
-    my $got = do {
-        no warnings 'utf8';
-        encode_utf8($string, $fallback);
-    };
-
-    my $exp = "\xEF\xBF\xBD Foo \xE2\x98\xBA \xEF\xBF\xBD";
-
-    my $name = sprintf 'enode_utf8(<%s>, $fallback2) eq <%s>',
-      join(' ', map { sprintf '%.2X', ord } split //, $string),
-      join(' ', map { sprintf '%.4X', ord } split //, $exp);
-
-    is($got, $exp, $name);
-}
-
-{
-    my $string = do {
-        no warnings 'utf8';
-        "\x{110000} Foo \x{263A} \x{110000}";
-    };
-    my $fallback = sub {
-        return '';
-    };
-
-    my $got = do {
-        no warnings 'utf8';
-        encode_utf8($string, $fallback);
-    };
-
-    my $exp = " Foo \xE2\x98\xBA ";
-
-    my $name = sprintf 'enode_utf8(<%s>, $fallback2) eq <%s>',
-      join(' ', map { sprintf '%.2X', ord } split //, $string),
-      join(' ', map { sprintf '%.4X', ord } split //, $exp);
-
-    is($got, $exp, $name);
+        is($got, $exp, $name);
+    }
 }
 
