@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 12;
+use Test::More tests => 14;
 
 BEGIN {
     use_ok('Unicode::UTF8', qw[ decode_utf8 encode_utf8 ]);
@@ -42,6 +42,10 @@ BEGIN {
           "\x80 Foo \x{263A} \xE0\x80\x80",
           sub { return $_[0] }
         ],
+        [ "\xEF\xB7\x90 Foo \xEF\xB7\xA0 \xE0\x80\x80",
+          "! Foo ! \x{FFFD}\x{FFFD}\x{FFFD}",
+          sub { return $_[1] ? '!' : "\x{FFFD}" }
+        ],
     );
 
     foreach my $test (@tests) {
@@ -73,6 +77,10 @@ BEGIN {
         [ "\x{110000} Foo \x{263A} \x{110000}",
           " Foo \xE2\x98\xBA ",
           sub { return '' }
+        ],
+        [ "\x{FDD0} Foo \x{263A} \x{FDE0}",
+          "! Foo \xE2\x98\xBA !",
+          sub { return $_[1] ? '!' : "\x{FFFD}" }
         ],
     );
 
