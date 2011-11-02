@@ -89,8 +89,8 @@ UTF-8 encoding form with REPLACEMENT CHARACTER (U+FFFD).
     $string = $fallback->($codepoint, $is_usv);
 
 C<$fallback> is invoked with two arguments, C<$codepoint> and C<$is_usv>. 
-C<$codepoint> is a unsigned integer containing the code point which can't 
-represented in UTF-8 encoding form or be interchanged. C<$is_usv> is a boolean 
+C<$codepoint> is a unsigned integer containing the code point which can't be
+interchanged or represented in UTF-8 encoding form. C<$is_usv> is a boolean 
 indicating whether or not C<$codepoint> is a Unicode scalar value. C<$fallback> 
 must return a character string consisting of zero or more characters.
 
