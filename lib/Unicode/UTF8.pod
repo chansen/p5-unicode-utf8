@@ -12,7 +12,7 @@ Unicode::UTF8 - Encoding and decoding of UTF-8 encoding form.
 =head1 DESCRIPTION
 
 This module provides functions to encode and decode UTF-8 encoding form as 
-defined by Unicode and ISO/IEC 10646:2011.
+specified by Unicode and ISO/IEC 10646:2011.
 
 Here is a summary of features for comparison with L<Encode>:
 
@@ -44,7 +44,8 @@ preserves taintedness of decoded C<$octets> or encoded C<$string>
 
 =item *
 
-much better performance ~ +600% L<https://github.com/chansen/p5-unicode-utf8/blob/master/benchmarks/bench.pl>
+better performance ~ 600% - 1200% (JA: 600%, AR: 700%, SV: 900%, EN: 1200%, 
+see benchmarks directory in git repository)
 
 =back
 
@@ -55,16 +56,16 @@ much better performance ~ +600% L<https://github.com/chansen/p5-unicode-utf8/blo
 Returns an decoded representation of C<$octets> in UTF-8 encoding as a character
 string.
 
-Issues a warning if C<$octets> contains ill-formed UTF-8 sequences or encoded 
-code points which can't be interchanged.
+Issues a warning using L<warnings> category C<utf8> if C<$octets> contains 
+ill-formed UTF-8 sequences or encoded code points which can't be interchanged.
 
 =head2 encode_utf8($string)
 
 Returns an encoded representation of C<$string> in UTF-8 encoding as an octet
 string.
 
-Issues a warning if C<$string> contains code points which can't be interchanged
-or represented in UTF-8 encoding form.
+Issues a warning using L<warnings> category C<utf8> if C<$string> contains 
+code points which can't be interchanged or represented in UTF-8 encoding form.
 
 =head1 EXPORTS
 
@@ -111,6 +112,8 @@ of wide characters.
 =over 4
 
 =item L<Encode>
+
+=item L<http://www.unicode.org/>
 
 =back
 
