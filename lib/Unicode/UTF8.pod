@@ -51,7 +51,7 @@ see benchmarks directory in git repository)
 
 =head1 FUNCTIONS
 
-=head2 decode_utf8($octets)
+=head2 decode_utf8($octets [, $fallback])
 
 Returns an decoded representation of C<$octets> in UTF-8 encoding as a character
 string.
@@ -59,13 +59,40 @@ string.
 Issues a warning using L<warnings> category C<utf8> if C<$octets> contains 
 ill-formed UTF-8 sequences or encoded code points which can't be interchanged.
 
-=head2 encode_utf8($string)
+<$fallback> is a C<CODE> reference which provides a error-handling mechanism, 
+allowing customization of error handling. The default error-handling mechanism 
+is to replace any ill-formed UTF-8 sequences or encoded code points which can't 
+be interchanged with REPLACEMENT CHARACTER (U+FFFD).
+
+    $string = $fallback->($octets, $is_usv);
+
+C<$fallback> is invoked with two arguments, C<$octets> and <$is_usv>. C<$octets>
+constains a sequence of one or more octets containing the maximal subpart of 
+the ill-formed subsequence or encoded code point which can't be interchanged.
+C<$is_usv> is a boolean indicating whether or not C<$octets> represent a 
+encoded Unicode scalar value. C<$fallback> must return a character string 
+consisting of zero or more characters.
+
+=head2 encode_utf8($string [, $fallback])
 
 Returns an encoded representation of C<$string> in UTF-8 encoding as an octet
 string.
 
 Issues a warning using L<warnings> category C<utf8> if C<$string> contains 
 code points which can't be interchanged or represented in UTF-8 encoding form.
+
+<$fallback> is a C<CODE> reference which provides a error-handling mechanism, 
+allowing customization of error handling. The default error-handling mechanism 
+is to replace any code points which can't be interchanged or represented in 
+UTF-8 encoding form with REPLACEMENT CHARACTER (U+FFFD).
+
+    $string = $fallback->($codepoint, $is_usv);
+
+C<$fallback> is invoked with two arguments, C<$codepoint> and <$is_usv>. 
+C<$codepoint> is a unsigned integer containing the code point which can't 
+represented in UTF-8 encoding form or be interchanged. C<$is_usv> is a boolean 
+indicating whether or not C<$codepoint> is a Unicode scalar value. C<$fallback> 
+must return a character string consisting of zero or more characters.
 
 =head1 EXPORTS
 
