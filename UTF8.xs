@@ -368,9 +368,13 @@ decode_utf8(octets, fallback=NULL)
     off = utf8_check(src, len);
     if (off == len)
         sv_setpvn(TARG, (const char *)src, len);
-    else
-        utf8_decode_replace(aTHX_ TARG, src, len, off, fallback);
-
+    else {
+        ST(0) = sv_newmortal();
+        SvPOK_on(ST(0));
+        utf8_decode_replace(aTHX_ ST(0), src, len, off, fallback);
+        SvUTF8_on(ST(0));
+        XSRETURN(1);
+    }
     SvUTF8_on(TARG);
     PUSHTARG;
 
@@ -392,8 +396,12 @@ encode_utf8(string, fallback=NULL)
         STRLEN off = utf8_check(src, len);
         if (off == len)
             sv_setpvn(TARG, (const char *)src, len);
-        else
-            utf8_encode_replace(aTHX_ TARG, src, len, off, fallback);
+        else {
+            ST(0) = sv_newmortal();
+            SvPOK_on(ST(0));
+            utf8_encode_replace(aTHX_ ST(0), src, len, off, fallback);
+            XSRETURN(1);
+        }
     }
     SvUTF8_off(TARG);
     PUSHTARG;
