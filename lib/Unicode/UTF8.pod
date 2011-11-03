@@ -67,7 +67,7 @@ be interchanged with REPLACEMENT CHARACTER (U+FFFD).
     $string = $fallback->($octets, $is_usv);
 
 C<$fallback> is invoked with two arguments, C<$octets> and C<$is_usv>. 
-C<$octets>constains a sequence of one or more octets containing the maximal 
+C<$octets> constains a sequence of one or more octets containing the maximal 
 subpart of the ill-formed subsequence or encoded code point which can't be 
 interchanged. C<$is_usv> is a boolean indicating whether or not C<$octets> 
 represent a encoded Unicode scalar value. C<$fallback> must return a character 
