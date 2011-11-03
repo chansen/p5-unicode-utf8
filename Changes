@@ -1,8 +1,11 @@
+0.01_11 2011-11-03
+  - Only use XSTARG on well-formed UTF-8 strings
+
 0.01_10 2011-11-03
   - Corrected POD commands and typos in documentation.
 
 0.01_09 2011-11-03
-  - Implemented support for error-handling mechanism in encode and decode
+  - Implemented support for error-handling mechanism
 
 0.01_08 2011-10-18
   - Refactored internal function utf8_check() to increase performance 

@@ -95,7 +95,7 @@ sub warns_ok (&$;$) {
         }
         elsif (@warnings >= 2) {
             $Tester->diag("expected a warning but several were issued");
-            $Tester->diag("warnings: " . @warnings);
+            $Tester->diag("warnings: " . join '', @warnings);
         }
         else {
             $Tester->diag("expecting: " . $regexp);
