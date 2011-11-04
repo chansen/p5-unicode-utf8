@@ -42,6 +42,7 @@ utf8_check(const U8 *s, const STRLEN len) {
                 p += 1;
                 break;
             case 2:
+                /* 110xxxxx 10xxxxxx */
                 if ((p[1] & 0xC0) != 0x80)
                     goto done;
                 p += 2;
@@ -50,13 +51,14 @@ utf8_check(const U8 *s, const STRLEN len) {
                 v = ((U32)p[0] << 16)
                   | ((U32)p[1] <<  8)
                   | ((U32)p[2]);
-                if ((v & 0x00F0C0C0) != 0x00E08080
+                /* 1110xxxx 10xxxxxx 10xxxxxx */
+                if ((v & 0x00F0C0C0) != 0x00E08080 ||
                     /* Non-shortest form */
-                    || v < 0x00E0A080
+                    v < 0x00E0A080 ||
                     /* Surrogates U+D800..U+DFFF */
-                    || (v & 0x00EFA080) == 0x00EDA080
-                    /* Non-characters U+FDD0..U+FDEF, U+FFFE and U+FFFF */
-                    || (v >= 0x00EFB790 && (v <= 0x00EFB7AF || v >= 0x00EFBFBE)))
+                    (v & 0x00EFA080) == 0x00EDA080 ||
+                    /* Non-characters U+FDD0..U+FDEF, U+FFFE..U+FFFF */
+                    (v >= 0x00EFB790 && (v <= 0x00EFB7AF || v >= 0x00EFBFBE)))
                     goto done;
                 p += 3;
                 break;
@@ -65,13 +67,14 @@ utf8_check(const U8 *s, const STRLEN len) {
                   | ((U32)p[1] << 16)
                   | ((U32)p[2] <<  8)
                   | ((U32)p[3]);
-                if ((v & 0xF8C0C0C0) != 0xF0808080
+                /* 11110xxx 10xxxxxx 10xxxxxx 10xxxxxx */
+                if ((v & 0xF8C0C0C0) != 0xF0808080 ||
                     /* Non-shortest form */
-                    || v < 0xF0908080 
+                    v < 0xF0908080 ||
                     /* Greater than U+10FFFF */
-                    || v > 0xF48FBFBF
-                    /* Non-characters U+nFFFE and U+nFFFF on plane 1-16 */
-                    || (v & 0x000FBFBE) == 0x000FBFBE)
+                    v > 0xF48FBFBF ||
+                    /* Non-characters U+nFFFE..U+nFFFF on plane 1-16 */
+                    (v & 0x000FBFBE) == 0x000FBFBE)
                     goto done;
                 p += 4;
                 break;
@@ -128,12 +131,30 @@ utf8_skip(const U8 *s, const STRLEN len) {
 
     if (n < 1 || len < 2)
         return 1;
+
     switch (s[0]) {
-        case 0xE0: if ((s[1] & 0xE0) == 0x80) return 1; break;
-        case 0xED: if ((s[1] & 0xE0) == 0xA0) return 1; break;
-        case 0xF0: if ((s[1] & 0xF0) == 0x80) return 1; break;
-        case 0xF4: if ((s[1] & 0xF0) != 0x80) return 1; break;
+        case 0xE0:
+            /* \xE0 [\xA0-\xBF] */
+            if ((s[1] & 0xE0) == 0x80)
+                return 1; 
+            break;
+        case 0xED:
+            /* \xED [\x80-\x9F] */
+            if ((s[1] & 0xE0) == 0xA0)
+                return 1; 
+            break;
+        case 0xF0:
+            /* \xF0 [\x90-\xBF] */
+            if ((s[1] & 0xF0) == 0x80)
+                return 1; 
+            break;
+        case 0xF4:
+            /* \xF4 [\x80-\x8F] */
+            if ((s[1] & 0xF0) != 0x80)
+                return 1; 
+            break;
     }
+
     if (n > len)
         n = len;
     for (i = 1; i < n; i++)
@@ -232,7 +253,7 @@ utf8_decode_replace(pTHX_ SV *dsv, const U8 *src, STRLEN len, STRLEN off, CV *fa
     UV usv;
 
     SvUPGRADE(dsv, SVt_PV);
-    SvCUR_set(dsv, 0);
+    SvPOK_on(dsv);
 
     do {
         src += off;
@@ -254,7 +275,7 @@ utf8_decode_replace(pTHX_ SV *dsv, const U8 *src, STRLEN len, STRLEN off, CV *fa
         sv_catpvn_nomg(dsv, (const char *)src - off, off);
 
         if (fallback)
-            handle_fallback(aTHX_ dsv, fallback, newSVpvn(src, skip), usv);
+            handle_fallback(aTHX_ dsv, fallback, newSVpvn((const char *)src, skip), usv);
         else
             sv_catpvn_nomg(dsv, "\xEF\xBF\xBD", 3);
 
@@ -302,7 +323,7 @@ utf8_encode_replace(pTHX_ SV *dsv, const U8 *src, STRLEN len, STRLEN off, CV *fa
     UV v;
 
     SvUPGRADE(dsv, SVt_PV);
-    SvCUR_set(dsv, 0);
+    SvPOK_on(dsv);
 
     do {
         src += off;
@@ -370,7 +391,6 @@ decode_utf8(octets, fallback=NULL)
         sv_setpvn(TARG, (const char *)src, len);
     else {
         ST(0) = sv_newmortal();
-        SvPOK_on(ST(0));
         utf8_decode_replace(aTHX_ ST(0), src, len, off, fallback);
         SvUTF8_on(ST(0));
         XSRETURN(1);
@@ -398,7 +418,6 @@ encode_utf8(string, fallback=NULL)
             sv_setpvn(TARG, (const char *)src, len);
         else {
             ST(0) = sv_newmortal();
-            SvPOK_on(ST(0));
             utf8_encode_replace(aTHX_ ST(0), src, len, off, fallback);
             XSRETURN(1);
         }
