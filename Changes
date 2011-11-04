@@ -1,3 +1,7 @@
+0.50 2011-11-04
+  - First stable release. API is declared as stable. Warning messages might
+    undergo a few changes before 1.00 release.
+
 0.01_11 2011-11-03
   - Only use XSTARG on well-formed UTF-8 strings
 
