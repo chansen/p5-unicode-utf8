@@ -146,13 +146,13 @@ of wide characters.
 
 =head1 SUPPORT
 
-=head2 Bugs / Feature Requests
+=head2 BUGS
 
-Please report any bugs or feature requests by email to C<bug-unicode-utf8 at rt.cpan.org>, or through
-the web interface at L<http://rt.cpan.org/Public/Dist/Display.html?Name=Unicode-UTF8>. You will be automatically notified of any
-progress on the request by the system.
+Please report any bugs by email to C<bug-unicode-utf8 at rt.cpan.org>, or 
+through the web interface at L<http://rt.cpan.org/Public/Dist/Display.html?Name=Unicode-UTF8>. 
+You will be automatically notified of any progress on the request by the system.
 
-=head2 Source Code
+=head2 SOURCE CODE
 
 This is open source software. The code repository is available for public 
 review and contribution under the terms of the license.
