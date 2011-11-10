@@ -1,3 +1,7 @@
+0.51
+  - Implemented support for the nonchar, surrogate and non_unicode 
+    sub-categories of utf8 warning on Perl 5.14 or greater.
+
 0.50 2011-11-04
   - First stable release. API is declared as stable. Warning messages might
     undergo a few changes before 1.00 release.
@@ -12,7 +16,7 @@
   - Implemented support for error-handling mechanism
 
 0.01_08 2011-10-18
-  - Refactored internal function utf8_check() to increase performance 
+  - Refactored internal function utf8_check() for better performance
 
 0.01_07 2011-10-11
   - Fixed detection of non-shortest form UTF-X on perl versions <= 5.8.6

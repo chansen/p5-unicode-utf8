@@ -163,20 +163,39 @@ utf8_skip(const U8 *s, const STRLEN len) {
     return i;
 }
 
+#ifndef WARN_NON_UNICODE
+# define WARN_NON_UNICODE WARN_UTF8
+# define WARN_NONCHAR WARN_UTF8
+# define WARN_SURROGATE WARN_UTF8
+#endif
+
 static void
 report_unmappable(pTHX_ const UV cp, const STRLEN pos) {
     const char *fmt;
+    U32 cat;
 
-    if (cp > 0x10FFFF)
+    if (cp > 0x10FFFF) {
         fmt = "Can't represent super code point \\x{%"UVXf"} at position %"UVuf" in UTF-8 encoding form";
-    else if (cp >= 0xFDD0 && (cp <= 0xFDEF || (cp & 0xFFFE) == 0xFFFE))
+        cat = WARN_NON_UNICODE;
+    }
+    else if (cp >= 0xFDD0 && (cp <= 0xFDEF || (cp & 0xFFFE) == 0xFFFE)) {
         fmt = "Can't interchange noncharacter code point U+%"UVXf" at position %"UVuf;
-    else if ((cp & 0xF800) == 0xD800)
+        cat = WARN_NONCHAR;
+    }
+    else if ((cp & 0xF800) == 0xD800) {
         fmt = "Can't represent surrogate code point U+%"UVXf" at position %"UVuf" in UTF-8 encoding form";
-    else
+        cat = WARN_SURROGATE;
+    }
+    else {
         fmt = "Can't represent code point U+%04"UVXf" at position %"UVuf" in UTF-8 encoding form";
+        cat = WARN_UTF8;
+    }
 
-    Perl_warner(aTHX_ packWARN(WARN_UTF8), fmt, cp, (UV)pos);
+#if PERL_REVISION == 5 && PERL_VERSION >= 14
+    Perl_ck_warner_d(aTHX_ packWARN(cat), fmt, cp, (UV)pos);
+#else
+    Perl_warner(aTHX_ packWARN(cat), fmt, cp, (UV)pos);
+#endif
 }
 
 static void
@@ -247,7 +266,7 @@ handle_fallback(pTHX_ SV *dsv, CV *fallback, SV *val, UV usv) {
 
 static void
 utf8_decode_replace(pTHX_ SV *dsv, const U8 *src, STRLEN len, STRLEN off, CV *fallback) {
-    const bool do_warn = ckWARN(WARN_UTF8);
+    const bool do_warn = ckWARN_d(WARN_UTF8);
     STRLEN pos = 0;
     STRLEN skip;
     UV usv;
@@ -317,7 +336,7 @@ utf8_encode_native(pTHX_ SV *dsv, const U8 *src, STRLEN len) {
 
 static void
 utf8_encode_replace(pTHX_ SV *dsv, const U8 *src, STRLEN len, STRLEN off, CV *fallback) {
-    const bool do_warn = ckWARN(WARN_UTF8);
+    const bool do_warn = ckWARN_d(WARN_UTF8);
     STRLEN pos = 0;
     STRLEN skip;
     UV v;

@@ -14,13 +14,13 @@ Unicode::UTF8 - Encoding and decoding of UTF-8 encoding form.
 This module provides functions to encode and decode UTF-8 encoding form as 
 specified by Unicode and ISO/IEC 10646:2011.
 
-Here is a summary of features for comparison with L<Encode>:
+Here is a summary of features for comparison with L<Encode>'s UTF-8 implementation:
 
 =over 4
 
 =item *
 
-simple API which integrates with warnings category C<utf8>
+simple API which makes use of Perl's standard warning categories.
 
 =item *
 
@@ -56,7 +56,7 @@ see benchmarks directory in git repository)
 Returns an decoded representation of C<$octets> in UTF-8 encoding as a character
 string.
 
-Issues a warning using L<warnings> category C<utf8> if C<$octets> contains 
+Issues a warning using warnings category C<utf8> if C<$octets> contains 
 ill-formed UTF-8 sequences or encoded code points which can't be interchanged.
 
 C<$fallback> is a C<CODE> reference which provides a error-handling mechanism, 
@@ -67,7 +67,7 @@ be interchanged with REPLACEMENT CHARACTER (U+FFFD).
     $string = $fallback->($octets, $is_usv);
 
 C<$fallback> is invoked with two arguments, C<$octets> and C<$is_usv>. 
-C<$octets> constains a sequence of one or more octets containing the maximal 
+C<$octets> is a sequence of one or more octets containing the maximal 
 subpart of the ill-formed subsequence or encoded code point which can't be 
 interchanged. C<$is_usv> is a boolean indicating whether or not C<$octets> 
 represent a encoded Unicode scalar value. C<$fallback> must return a character 
@@ -113,19 +113,19 @@ hexadecimal representation of the maximal subpart of the ill-formed subsequence.
 
 =item Can't interchange noncharacter code point U+%.4X at position %u
 
-(W utf8) Noncharacters is permanently reserved for internal use and that
+(W utf8, nonchar) Noncharacters is permanently reserved for internal use and that
 should never be interchanged. Noncharacters consist of the values U+nFFFE and
 U+nFFFF (where n is from 0 to 10^16) and the values U+FDD0..U+FDEF.
 
 =item Can't represent surrogate code point U+%.4X at position %u in UTF-8 encoding form
 
-(W utf8) Surrogate code points are designated only for surrogate code units in the 
+(W utf8, surrogate) Surrogate code points are designated only for surrogate code units in the 
 UTF-16 character encoding form. Surrogates consist of code points in the range 
 U+D800 to U+DFFF.
 
 =item Can't represent super code point \x{%X} at position %u in UTF-8 encoding form
 
-(W utf8) Code points greater than U+10FFFF. Perl's extended codespace.
+(W utf8, non_unicode) Code points greater than U+10FFFF. Perl's extended codespace.
 
 =item Can't decode ill-formed UTF-X octet sequence <%s> in position %u
 
@@ -133,6 +133,10 @@ U+D800 to U+DFFF.
 of wide characters.
 
 =back
+
+Please note that the sub-categories of utf8 warning C<nonchar>, C<surrogate> 
+and C<non_unicode> is only available on Perl 5.14 or greater. See L<perllexwarn> 
+for available categories and hierarchies.
 
 =head1 SEE ALSO
 
