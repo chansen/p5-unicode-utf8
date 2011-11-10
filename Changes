@@ -1,4 +1,4 @@
-0.51
+0.51 2011-11-10
   - Implemented support for the nonchar, surrogate and non_unicode 
     sub-categories of utf8 warning on Perl 5.14 or greater.
 
