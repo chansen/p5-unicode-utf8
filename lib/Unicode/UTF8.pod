@@ -78,7 +78,7 @@ string consisting of zero or more Unicode characters.
 Returns an encoded representation of C<$string> in UTF-8 encoding as an octet
 string.
 
-Issues a warning using L<warnings> category C<utf8> if C<$string> contains 
+Issues a warning using warnings category C<utf8> if C<$string> contains 
 code points which can't be interchanged or represented in UTF-8 encoding form.
 
 C<$fallback> is a C<CODE> reference which provides a error-handling mechanism, 
@@ -137,6 +137,12 @@ of wide characters.
 Please note that the sub-categories of utf8 warning C<nonchar>, C<surrogate> 
 and C<non_unicode> is only available on Perl 5.14 or greater. See L<perllexwarn> 
 for available categories and hierarchies.
+
+=head1 CONFORMANCE
+
+It's the author's believe that this UTF-8 implementation is conformant with 
+the Unicode Standard Version 6.0. Any deviations from the Unicode Standard 
+is to be considered a bug.
 
 =head1 SEE ALSO
 
