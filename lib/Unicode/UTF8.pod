@@ -1,6 +1,6 @@
 =head1 NAME
 
-Unicode::UTF8 - Encoding and decoding of UTF-8 encoding form.
+Unicode::UTF8 - Decoding and encoding of UTF-8 encoding form
 
 =head1 SYNOPSIS
 
