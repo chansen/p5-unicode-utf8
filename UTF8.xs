@@ -133,31 +133,16 @@ utf8_skip(const U8 *s, const STRLEN len) {
         return 1;
 
     switch (s[0]) {
-        case 0xE0:
-            /* \xE0 [\xA0-\xBF] */
-            if ((s[1] & 0xE0) == 0x80)
-                return 1; 
-            break;
-        case 0xED:
-            /* \xED [\x80-\x9F] */
-            if ((s[1] & 0xE0) == 0xA0)
-                return 1; 
-            break;
-        case 0xF0:
-            /* \xF0 [\x90-\xBF] */
-            if ((s[1] & 0xF0) == 0x80)
-                return 1; 
-            break;
-        case 0xF4:
-            /* \xF4 [\x80-\x8F] */
-            if ((s[1] & 0xF0) != 0x80)
-                return 1; 
-            break;
+        case 0xE0: if ((s[1] & 0xE0) == 0x80) return 1; break; /* [\xA0-\xBF] */
+        case 0xED: if ((s[1] & 0xE0) == 0xA0) return 1; break; /* [\x80-\x9F] */
+        case 0xF0: if ((s[1] & 0xF0) == 0x80) return 1; break; /* [\x90-\xBF] */
+        case 0xF4: if ((s[1] & 0xF0) != 0x80) return 1; break; /* [\x80-\x8F] */
+        default:   if ((s[1] & 0xC0) != 0x80) return 1; break; /* [\x80-\xBF] */
     }
 
     if (n > len)
         n = len;
-    for (i = 1; i < n; i++)
+    for (i = 2; i < n; i++)
         if ((s[i] & 0xC0) != 0x80)
             break;
     return i;
