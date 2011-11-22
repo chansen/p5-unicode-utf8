@@ -5,7 +5,7 @@
 #define NEED_sv_2pv_flags
 #include "ppport.h"
 
-static const U8 utf8_sequence_len[0x100] = {
+static const U8 xs_utf8_sequence_len[0x100] = {
     1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, /* 0x00-0x0F */
     1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, /* 0x10-0x1F */
     1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, /* 0x20-0x2F */
@@ -25,7 +25,7 @@ static const U8 utf8_sequence_len[0x100] = {
 };
 
 static STRLEN
-utf8_check(const U8 *s, const STRLEN len) {
+xs_utf8_check(const U8 *s, const STRLEN len) {
     const U8 *p = s;
     const U8 *e = s + len;
     U32 v;
@@ -35,7 +35,7 @@ utf8_check(const U8 *s, const STRLEN len) {
             p++;
 
       check:
-        switch (utf8_sequence_len[*p]) {
+        switch (xs_utf8_sequence_len[*p]) {
             case 0:
                 goto done;
             case 1:
@@ -80,15 +80,15 @@ utf8_check(const U8 *s, const STRLEN len) {
                 break;
         }
     }
-    if (p < e && p + utf8_sequence_len[*p] <= e)
+    if (p < e && p + xs_utf8_sequence_len[*p] <= e)
         goto check;
   done:
     return p - s;
 }
 
 static STRLEN
-utf8_unpack(const U8 *s, const STRLEN len, UV *usv) {
-    const STRLEN n = utf8_sequence_len[*s];
+xs_utf8_unpack(const U8 *s, const STRLEN len, UV *usv) {
+    const STRLEN n = xs_utf8_sequence_len[*s];
     STRLEN i;
 
     if (n > len)
@@ -126,8 +126,8 @@ utf8_unpack(const U8 *s, const STRLEN len, UV *usv) {
 }
 
 static STRLEN
-utf8_skip(const U8 *s, const STRLEN len) {
-    STRLEN i, n = utf8_sequence_len[*s];
+xs_utf8_skip(const U8 *s, const STRLEN len) {
+    STRLEN i, n = xs_utf8_sequence_len[*s];
 
     if (n < 1 || len < 2)
         return 1;
@@ -155,7 +155,7 @@ utf8_skip(const U8 *s, const STRLEN len) {
 #endif
 
 static void
-report_unmappable(pTHX_ const UV cp, const STRLEN pos) {
+xs_report_unmappable(pTHX_ const UV cp, const STRLEN pos) {
     const char *fmt;
     U32 cat;
 
@@ -184,7 +184,7 @@ report_unmappable(pTHX_ const UV cp, const STRLEN pos) {
 }
 
 static void
-report_illformed(pTHX_ const U8 *s, STRLEN len, const char *enc, STRLEN pos, const bool fatal) {
+xs_report_illformed(pTHX_ const U8 *s, STRLEN len, const char *enc, STRLEN pos, const bool fatal) {
     static const char *fmt = "Can't decode ill-formed %s octet sequence <%s> in position %"UVuf;
     static const char *hex = "0123456789ABCDEF";
     char seq[20 * 3 + 4];
@@ -211,10 +211,10 @@ report_illformed(pTHX_ const U8 *s, STRLEN len, const char *enc, STRLEN pos, con
 }
 
 static void
-utf8_encode_native(pTHX_ SV *, const U8 *, STRLEN);
+xs_utf8_encode_native(pTHX_ SV *, const U8 *, STRLEN);
 
 static void
-handle_fallback(pTHX_ SV *dsv, CV *fallback, SV *val, UV usv) {
+xs_handle_fallback(pTHX_ SV *dsv, CV *fallback, SV *val, UV usv) {
     dSP;
     SV *str;
     const char *src;
@@ -240,7 +240,7 @@ handle_fallback(pTHX_ SV *dsv, CV *fallback, SV *val, UV usv) {
     str = POPs;
     src = SvPV_const(str, len);
     if (!SvUTF8(str))
-        utf8_encode_native(aTHX_ dsv, (const U8 *)src, len);
+        xs_utf8_encode_native(aTHX_ dsv, (const U8 *)src, len);
     else
         sv_catpvn_nomg(dsv, src, len); /* XXX validate? */
 
@@ -250,7 +250,7 @@ handle_fallback(pTHX_ SV *dsv, CV *fallback, SV *val, UV usv) {
 }
 
 static void
-utf8_decode_replace(pTHX_ SV *dsv, const U8 *src, STRLEN len, STRLEN off, CV *fallback) {
+xs_utf8_decode_replace(pTHX_ SV *dsv, const U8 *src, STRLEN len, STRLEN off, CV *fallback) {
     const bool do_warn = ckWARN_d(WARN_UTF8);
     STRLEN pos = 0;
     STRLEN skip;
@@ -264,22 +264,22 @@ utf8_decode_replace(pTHX_ SV *dsv, const U8 *src, STRLEN len, STRLEN off, CV *fa
         len -= off;
         pos += off;
 
-        skip = utf8_skip(src, len);
+        skip = xs_utf8_skip(src, len);
 
-        if ((do_warn || fallback) && !utf8_unpack(src, skip, &usv))
+        if ((do_warn || fallback) && !xs_utf8_unpack(src, skip, &usv))
             usv = 0;
 
         if (do_warn) {
             if (usv)
-                report_unmappable(aTHX_ usv, pos);
+                xs_report_unmappable(aTHX_ usv, pos);
             else
-                report_illformed(aTHX_ src, skip, "UTF-8", pos, FALSE);
+                xs_report_illformed(aTHX_ src, skip, "UTF-8", pos, FALSE);
         }
 
         sv_catpvn_nomg(dsv, (const char *)src - off, off);
 
         if (fallback)
-            handle_fallback(aTHX_ dsv, fallback, newSVpvn((const char *)src, skip), usv);
+            xs_handle_fallback(aTHX_ dsv, fallback, newSVpvn((const char *)src, skip), usv);
         else
             sv_catpvn_nomg(dsv, "\xEF\xBF\xBD", 3);
 
@@ -287,7 +287,7 @@ utf8_decode_replace(pTHX_ SV *dsv, const U8 *src, STRLEN len, STRLEN off, CV *fa
         len -= skip;
         pos += skip;
 
-        off = utf8_check(src, len);
+        off = xs_utf8_check(src, len);
         if (off == len) {
             sv_catpvn_nomg(dsv, (const char *)src, off);
             break;
@@ -296,7 +296,7 @@ utf8_decode_replace(pTHX_ SV *dsv, const U8 *src, STRLEN len, STRLEN off, CV *fa
 }
 
 static void
-utf8_encode_native(pTHX_ SV *dsv, const U8 *src, STRLEN len) {
+xs_utf8_encode_native(pTHX_ SV *dsv, const U8 *src, STRLEN len) {
     const U8 *send;
     U8 *d;
 
@@ -320,7 +320,7 @@ utf8_encode_native(pTHX_ SV *dsv, const U8 *src, STRLEN len) {
 }
 
 static void
-utf8_encode_replace(pTHX_ SV *dsv, const U8 *src, STRLEN len, STRLEN off, CV *fallback) {
+xs_utf8_encode_replace(pTHX_ SV *dsv, const U8 *src, STRLEN len, STRLEN off, CV *fallback) {
     const bool do_warn = ckWARN_d(WARN_UTF8);
     STRLEN pos = 0;
     STRLEN skip;
@@ -344,16 +344,16 @@ utf8_encode_replace(pTHX_ SV *dsv, const U8 *src, STRLEN len, STRLEN off, CV *fa
                 while (skip < n && UTF8_IS_CONTINUATION(src[skip]))
                     skip++;
             }
-            report_illformed(aTHX_ src, skip, "UTF-X", pos, TRUE);
+            xs_report_illformed(aTHX_ src, skip, "UTF-X", pos, TRUE);
         }
         if (do_warn)
-            report_unmappable(aTHX_ v, pos);
+            xs_report_unmappable(aTHX_ v, pos);
 
         sv_catpvn_nomg(dsv, (const char *)src - off, off);
 
         if (fallback) {
             UV usv = (v <= 0x10FFFF && (v & 0xF800) != 0xD800) ? v : 0;
-            handle_fallback(aTHX_ dsv, fallback, newSVuv(v), usv);
+            xs_handle_fallback(aTHX_ dsv, fallback, newSVuv(v), usv);
         }
         else
             sv_catpvn_nomg(dsv, "\xEF\xBF\xBD", 3);
@@ -362,7 +362,7 @@ utf8_encode_replace(pTHX_ SV *dsv, const U8 *src, STRLEN len, STRLEN off, CV *fa
         len -= skip;
         pos += 1;
 
-        off = utf8_check(src, len);
+        off = xs_utf8_check(src, len);
         if (off == len) {
             sv_catpvn_nomg(dsv, (const char *)src, off);
             break;
@@ -390,12 +390,12 @@ decode_utf8(octets, fallback=NULL)
             croak("Can't decode a wide character string");
         src = (const U8 *)SvPV_const(octets, len);
     }
-    off = utf8_check(src, len);
+    off = xs_utf8_check(src, len);
     if (off == len)
         sv_setpvn(TARG, (const char *)src, len);
     else {
         SV *dsv = sv_newmortal();
-        utf8_decode_replace(aTHX_ dsv, src, len, off, fallback);
+        xs_utf8_decode_replace(aTHX_ dsv, src, len, off, fallback);
         SvUTF8_on(dsv);
         ST(0) = dsv;
         XSRETURN(1);
@@ -414,16 +414,16 @@ encode_utf8(string, fallback=NULL)
   PPCODE:
     src = (const U8 *)SvPV_const(string, len);
     if (!SvUTF8(string)) {
-        utf8_encode_native(aTHX_ TARG, src, len);
+        xs_utf8_encode_native(aTHX_ TARG, src, len);
         SvTAINT(TARG);
     }
     else {
-        STRLEN off = utf8_check(src, len);
+        STRLEN off = xs_utf8_check(src, len);
         if (off == len)
             sv_setpvn(TARG, (const char *)src, len);
         else {
             SV *dsv = sv_newmortal();
-            utf8_encode_replace(aTHX_ dsv, src, len, off, fallback);
+            xs_utf8_encode_replace(aTHX_ dsv, src, len, off, fallback);
             ST(0) = dsv;
             XSRETURN(1);
         }
