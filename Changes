@@ -1,3 +1,10 @@
+0.52 2011-11-22
+  - There are no functional changes introduced by this release.
+  - Prefixed internal function names to avoid potential future name clashes.
+  - Minor refactor of internal function utf8_skip().
+  - Added a CONFORMANCE section to POD.
+  - Moved Encode.pm comparison to it's own section COMPARISON.
+
 0.51 2011-11-10
   - Implemented support for the nonchar, surrogate and non_unicode 
     sub-categories of utf8 warning on Perl 5.14 or greater.
