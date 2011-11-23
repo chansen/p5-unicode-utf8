@@ -133,11 +133,11 @@ xs_utf8_skip(const U8 *s, const STRLEN len) {
         return 1;
 
     switch (s[0]) {
-        case 0xE0: if ((s[1] & 0xE0) == 0x80) return 1; break; /* [\xA0-\xBF] */
-        case 0xED: if ((s[1] & 0xE0) == 0xA0) return 1; break; /* [\x80-\x9F] */
-        case 0xF0: if ((s[1] & 0xF0) == 0x80) return 1; break; /* [\x90-\xBF] */
-        case 0xF4: if ((s[1] & 0xF0) != 0x80) return 1; break; /* [\x80-\x8F] */
-        default:   if ((s[1] & 0xC0) != 0x80) return 1; break; /* [\x80-\xBF] */
+        case 0xE0: if ((s[1] & 0xE0) != 0xA0) return 1; break;
+        case 0xED: if ((s[1] & 0xE0) != 0x80) return 1; break;
+        case 0xF4: if ((s[1] & 0xF0) != 0x80) return 1; break;
+        case 0xF0: if ((s[1] & 0xF0) == 0x80) return 1; /* FALLTROUGH */
+        default:   if ((s[1] & 0xC0) != 0x80) return 1; break;
     }
 
     if (n > len)
@@ -256,7 +256,7 @@ xs_utf8_decode_replace(pTHX_ SV *dsv, const U8 *src, STRLEN len, STRLEN off, CV 
     STRLEN skip;
     UV usv;
 
-    SvUPGRADE(dsv, SVt_PV);
+    (void)SvUPGRADE(dsv, SVt_PV);
     SvPOK_on(dsv);
 
     do {
@@ -300,7 +300,7 @@ xs_utf8_encode_native(pTHX_ SV *dsv, const U8 *src, STRLEN len) {
     const U8 *send;
     U8 *d;
 
-    SvUPGRADE(dsv, SVt_PV);
+    (void)SvUPGRADE(dsv, SVt_PV);
     SvGROW(dsv, SvCUR(dsv) + len * 2 + 1);
     d    = (U8 *)SvPVX(dsv) + SvCUR(dsv);
     send = src + len;
@@ -326,7 +326,7 @@ xs_utf8_encode_replace(pTHX_ SV *dsv, const U8 *src, STRLEN len, STRLEN off, CV 
     STRLEN skip;
     UV v;
 
-    SvUPGRADE(dsv, SVt_PV);
+    (void)SvUPGRADE(dsv, SVt_PV);
     SvPOK_on(dsv);
 
     do {
