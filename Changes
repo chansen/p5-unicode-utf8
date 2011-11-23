@@ -1,3 +1,7 @@
+0.53 2011-11-23
+  - Previous release introduced a bug in utf8_skip(), fixed the bug and
+    increased test coverage.
+
 0.52 2011-11-22
   - There are no functional changes introduced by this release.
   - Prefixed internal function names to avoid potential future name clashes.
