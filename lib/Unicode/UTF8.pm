@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 BEGIN {
-    our $VERSION    = '0.53';
+    our $VERSION    = '0.54';
     our @EXPORT_OK  = qw[ decode_utf8 encode_utf8 ];
     our %EXPORT_TAGS = (
         all => [ @EXPORT_OK ],
