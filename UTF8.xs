@@ -385,7 +385,9 @@ decode_utf8(octets, fallback=NULL)
   PPCODE:
     src = (const U8 *)SvPV_const(octets, len);
     if (SvUTF8(octets)) {
-        octets = sv_mortalcopy(octets);
+        octets = sv_newmortal();
+        sv_setpvn(octets, (const char *)src, len);
+        SvUTF8_on(octets);
         if (!sv_utf8_downgrade(octets, TRUE))
             croak("Can't decode a wide character string");
         src = (const U8 *)SvPV_const(octets, len);
