@@ -1,3 +1,8 @@
+0.54 2011-12-21
+  - Fixed a bug where GET magic would be triggered twice during decode if the 
+    provided $octets scalar had the SvUTF8 flag turned on.
+  - Clarified $fallback return values.
+
 0.53 2011-11-23
   - Previous release introduced a bug in utf8_skip(), fixed the bug and
     increased test coverage.
