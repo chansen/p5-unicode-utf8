@@ -23,4 +23,5 @@ cover_db
 ^\._.*$
 \.shipit
 \.git.*
-^MYMETA\.yml
+^MYMETA\.
+
