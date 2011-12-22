@@ -1,5 +1,9 @@
+0.55 2011-12-22
+  - Fixed an assertion failure that was triggered by Perl_sv_catpvn_flags() 
+    when perl was compiled with DEBUGGING.
+
 0.54 2011-12-21
-  - Fixed a bug where GET magic would be triggered twice during decode if the 
+  - Fixed a bug where GET magic would be triggered twice in decode_utf8 if the 
     provided $octets scalar had the SvUTF8 flag turned on.
   - Clarified $fallback return values.
 
