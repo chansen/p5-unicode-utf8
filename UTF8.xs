@@ -257,7 +257,8 @@ xs_utf8_decode_replace(pTHX_ SV *dsv, const U8 *src, STRLEN len, STRLEN off, CV 
     UV usv;
 
     (void)SvUPGRADE(dsv, SVt_PV);
-    SvPOK_on(dsv);
+    (void)SvGROW(dsv, SvCUR(dsv) + off + 1);
+    SvPOK_only(dsv);
 
     do {
         src += off;
@@ -327,7 +328,8 @@ xs_utf8_encode_replace(pTHX_ SV *dsv, const U8 *src, STRLEN len, STRLEN off, CV 
     UV v;
 
     (void)SvUPGRADE(dsv, SVt_PV);
-    SvPOK_on(dsv);
+    (void)SvGROW(dsv, SvCUR(dsv) + off + 1);
+    SvPOK_only(dsv);
 
     do {
         src += off;
