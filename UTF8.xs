@@ -28,10 +28,11 @@ static STRLEN
 xs_utf8_check(const U8 *s, const STRLEN len) {
     const U8 *p = s;
     const U8 *e = s + len;
+    const U8 *e4 = e - 4;
     U32 v;
 
-    while (p < e - 4) {
-        while (p < e - 4 && *p < 0x80)
+    while (p < e4) {
+        while (p < e4 && *p < 0x80)
             p++;
 
       check:
@@ -214,7 +215,7 @@ static void
 xs_utf8_encode_native(pTHX_ SV *, const U8 *, STRLEN);
 
 static void
-xs_handle_fallback(pTHX_ SV *dsv, CV *fallback, SV *val, UV usv) {
+xs_handle_fallback(pTHX_ SV *dsv, CV *fallback, SV *val, UV usv, STRLEN pos) {
     dSP;
     SV *str;
     const char *src;
@@ -228,6 +229,7 @@ xs_handle_fallback(pTHX_ SV *dsv, CV *fallback, SV *val, UV usv) {
     EXTEND(SP, 2);
     mPUSHs(val);
     mPUSHu(usv);
+    mPUSHu((UV)pos);
     PUTBACK;
 
     count = call_sv((SV *)fallback, G_SCALAR);
@@ -279,8 +281,10 @@ xs_utf8_decode_replace(pTHX_ SV *dsv, const U8 *src, STRLEN len, STRLEN off, CV 
 
         sv_catpvn_nomg(dsv, (const char *)src - off, off);
 
-        if (fallback)
-            xs_handle_fallback(aTHX_ dsv, fallback, newSVpvn((const char *)src, skip), usv);
+        if (fallback) {
+            SV *octets = newSVpvn((const char *)src, skip);
+            xs_handle_fallback(aTHX_ dsv, fallback, octets, usv, pos);
+        }
         else
             sv_catpvn_nomg(dsv, "\xEF\xBF\xBD", 3);
 
@@ -354,8 +358,9 @@ xs_utf8_encode_replace(pTHX_ SV *dsv, const U8 *src, STRLEN len, STRLEN off, CV 
         sv_catpvn_nomg(dsv, (const char *)src - off, off);
 
         if (fallback) {
+            SV *codepoint = newSVuv(v);
             UV usv = (v <= 0x10FFFF && (v & 0xF800) != 0xD800) ? v : 0;
-            xs_handle_fallback(aTHX_ dsv, fallback, newSVuv(v), usv);
+            xs_handle_fallback(aTHX_ dsv, fallback, codepoint, usv, pos);
         }
         else
             sv_catpvn_nomg(dsv, "\xEF\xBF\xBD", 3);

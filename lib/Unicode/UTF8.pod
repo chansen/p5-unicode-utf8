@@ -32,15 +32,18 @@ mechanism, allowing customization of error handling. The default error-handling
 mechanism is to replace any ill-formed UTF-8 sequences or encoded code points 
 which can't be interchanged with REPLACEMENT CHARACTER (U+FFFD).
 
-    $string = $fallback->($octets, $is_usv);
+    $string = $fallback->($octets, $is_usv, $position);
 
-C<$fallback> is invoked with two arguments, C<$octets> and C<$is_usv>. 
-C<$octets> is a sequence of one or more octets containing the maximal 
-subpart of the ill-formed subsequence or encoded code point which can't be 
-interchanged. C<$is_usv> is a boolean indicating whether or not C<$octets> 
-represent a encoded Unicode scalar value. C<$fallback> must return a character 
-string consisting of zero or more Unicode scalar values. Unicode scalar values 
-consist of code points in the range U+0000..U+D7FF and U+E000..U+10FFFF.
+C<$fallback> is invoked with three arguments, C<$octets>, C<$is_usv> and 
+C<$position>. C<$octets> is a sequence of one or more octets containing the 
+maximal subpart of the ill-formed subsequence or encoded code point which 
+can't be interchanged. C<$is_usv> is a boolean indicating whether or not 
+C<$octets> represent a encoded Unicode scalar value. C<$position> is a 
+unsigned integer containing the octet position at which the error occurred 
+within the octets provided to C<decode_utf8()>. C<$fallback> must return a 
+character string consisting of zero or more Unicode scalar values. Unicode 
+scalar values consist of code points in the range U+0000..U+D7FF and 
+U+E000..U+10FFFF.
 
 =head2 encode_utf8
 
@@ -58,12 +61,14 @@ mechanism, allowing customization of error handling. The default error-handling
 mechanism is to replace any code points which can't be interchanged or represented 
 in UTF-8 encoding form with REPLACEMENT CHARACTER (U+FFFD).
 
-    $string = $fallback->($codepoint, $is_usv);
+    $string = $fallback->($codepoint, $is_usv, $position);
 
-C<$fallback> is invoked with two arguments, C<$codepoint> and C<$is_usv>. 
-C<$codepoint> is a unsigned integer containing the code point which can't be
-interchanged or represented in UTF-8 encoding form. C<$is_usv> is a boolean 
-indicating whether or not C<$codepoint> is a Unicode scalar value. C<$fallback> 
+C<$fallback> is invoked with three arguments, C<$codepoint>, C<$is_usv> and 
+C<$position>. C<$codepoint> is a unsigned integer containing the code point 
+which can't be interchanged or represented in UTF-8 encoding form. C<$is_usv> 
+is a boolean indicating whether or not C<$codepoint> is a Unicode scalar value. 
+C<$position> is a unsigned integer containing the character position at which 
+the error occurred within the string provided to C<encode_utf8()>. C<$fallback> 
 must return a character string consisting of zero or more Unicode scalar values.
 Unicode scalar values consist of code points in the range U+0000..U+D7FF and 
 U+E000..U+10FFFF.
