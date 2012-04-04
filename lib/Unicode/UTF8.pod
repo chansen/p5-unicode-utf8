@@ -18,11 +18,11 @@ specified by Unicode and ISO/IEC 10646:2011.
 
 =head2 decode_utf8
 
-    $string = decode_utf8($octets);
-    $string = decode_utf8($octets, $fallback);
-
 Returns an decoded representation of C<$octets> in UTF-8 encoding as a character
 string.
+
+    $string = decode_utf8($octets);
+    $string = decode_utf8($octets, $fallback);
 
 Issues a warning using warnings category C<utf8> if C<$octets> contains 
 ill-formed UTF-8 sequences or encoded code points which can't be interchanged.
@@ -47,11 +47,11 @@ U+E000..U+10FFFF.
 
 =head2 encode_utf8
 
-    $octets = encode_utf8($string);
-    $octets = encode_utf8($string, $fallback);
-
 Returns an encoded representation of C<$string> in UTF-8 encoding as an octet
 string.
+
+    $octets = encode_utf8($string);
+    $octets = encode_utf8($string, $fallback);
 
 Issues a warning using warnings category C<utf8> if C<$string> contains 
 code points which can't be interchanged or represented in UTF-8 encoding form.
