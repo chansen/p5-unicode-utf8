@@ -1,3 +1,7 @@
+0.56 2011-11-04
+  - Added a third argument to $fallback, the position of octet/character at 
+    which the error occurred.
+
 0.55 2011-12-22
   - Fixed an assertion failure that was triggered by Perl_sv_catpvn_flags() 
     when perl was compiled with DEBUGGING.
