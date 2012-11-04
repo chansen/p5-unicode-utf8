@@ -3,25 +3,28 @@
 use strict;
 use warnings;
 
-use Test::More tests => 14;
+use Test::More tests => 15;
 
 BEGIN {
     use_ok('Unicode::UTF8', qw[ decode_utf8 encode_utf8 ]);
 }
 
 {
+    my @positions;
     my $octets = "\x80 \xE2\x98\xBA \xF4\x80\x80 \xE0\x80\x80";
     my @exp    = ("\x80", "\xF4\x80\x80", "\xE0", "\x80", "\x80");
     my $count  = 0;
 
     my $fallback = sub {
-        my $got  = shift;
+        my ($octets, $is_usv, $position) = @_;
+
         my $exp  = shift @exp;
         my $name = sprintf '$sequence eq <%s>',
           join(' ', map { sprintf '%.4X', ord } split //, $exp);
 
-        is($got, $exp, $name);
+        is($octets, $exp, $name);
         $count++;
+        push @positions, $position;
     };
 
     {
@@ -30,6 +33,7 @@ BEGIN {
     }
 
     is($count, 5, "decode fallback invoked 5 times");
+    is("@positions", "0 6 10 11 12", "got correct octet positions");
 }
 
 {
