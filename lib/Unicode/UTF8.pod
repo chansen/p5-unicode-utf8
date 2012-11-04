@@ -6,6 +6,7 @@ Unicode::UTF8 - Encoding and decoding of UTF-8 encoding form
 
     use Unicode::UTF8 qw[decode_utf8 encode_utf8];
     
+    use warnings FATAL => 'utf8'; # Promote decoding/encoding warnings into exceptions
     $string = decode_utf8($octets);
     $octets = encode_utf8($string);
 
@@ -34,15 +35,15 @@ which can't be interchanged with REPLACEMENT CHARACTER (U+FFFD).
 
     $string = $fallback->($octets, $is_usv, $position);
 
-C<$fallback> is invoked with three arguments, C<$octets>, C<$is_usv> and 
+C<$fallback> is invoked with three arguments: C<$octets>, C<$is_usv> and 
 C<$position>. C<$octets> is a sequence of one or more octets containing the 
 maximal subpart of the ill-formed subsequence or encoded code point which 
 can't be interchanged. C<$is_usv> is a boolean indicating whether or not 
 C<$octets> represent a encoded Unicode scalar value. C<$position> is a 
-unsigned integer containing the octet position at which the error occurred 
-within the octets provided to C<decode_utf8()>. C<$fallback> must return a 
-character string consisting of zero or more Unicode scalar values. Unicode 
-scalar values consist of code points in the range U+0000..U+D7FF and 
+unsigned integer containing the zero based octet position at which the error 
+occurred within the octets provided to C<decode_utf8()>. C<$fallback> must 
+return a character string consisting of zero or more Unicode scalar values. 
+Unicode scalar values consist of code points in the range U+0000..U+D7FF and 
 U+E000..U+10FFFF.
 
 =head2 encode_utf8
@@ -63,15 +64,15 @@ in UTF-8 encoding form with REPLACEMENT CHARACTER (U+FFFD).
 
     $string = $fallback->($codepoint, $is_usv, $position);
 
-C<$fallback> is invoked with three arguments, C<$codepoint>, C<$is_usv> and 
+C<$fallback> is invoked with three arguments: C<$codepoint>, C<$is_usv> and 
 C<$position>. C<$codepoint> is a unsigned integer containing the code point 
 which can't be interchanged or represented in UTF-8 encoding form. C<$is_usv> 
 is a boolean indicating whether or not C<$codepoint> is a Unicode scalar value. 
-C<$position> is a unsigned integer containing the character position at which 
-the error occurred within the string provided to C<encode_utf8()>. C<$fallback> 
-must return a character string consisting of zero or more Unicode scalar values.
-Unicode scalar values consist of code points in the range U+0000..U+D7FF and 
-U+E000..U+10FFFF.
+C<$position> is a unsigned integer containing the zero based character position 
+at which the error occurred within the string provided to C<encode_utf8()>. 
+C<$fallback> must return a character string consisting of zero or more Unicode 
+scalar values.Unicode scalar values consist of code points in the range 
+U+0000..U+D7FF and U+E000..U+10FFFF.
 
 =head1 EXPORTS
 
@@ -125,31 +126,32 @@ Here is a summary of features for comparison with L<Encode>'s UTF-8 implementati
 
 =item *
 
-simple API which makes use of Perl's standard warning categories.
+Simple API which makes use of Perl's standard warning categories.
 
 =item *
 
-recognizes all noncharacters regardless of perl version
+Recognizes all noncharacters regardless of perl version
 
 =item *
 
-implements Unicode's recommended practice for using U+FFFD
+Implements Unicode's recommended practice for using U+FFFD.
 
 =item *
 
-good diagnostics in warnings messages
+Good diagnostics in warning/exception messages
 
 =item *
 
-detects and reports inconsistency in perl's internal encoding (UTF-X)
+Detects and reports inconsistency in Perl's internal representation of 
+wide characters (UTF-X)
 
 =item *
 
-preserves taintedness of decoded C<$octets> or encoded C<$string>
+Preserves taintedness of decoded C<$octets> or encoded C<$string>
 
 =item *
 
-better performance ~ 600% - 1200% (JA: 600%, AR: 700%, SV: 900%, EN: 1200%, 
+Better performance ~ 600% - 1200% (JA: 600%, AR: 700%, SV: 900%, EN: 1200%, 
 see benchmarks directory in git repository)
 
 =back
