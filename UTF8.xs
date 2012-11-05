@@ -253,7 +253,11 @@ xs_handle_fallback(pTHX_ SV *dsv, CV *fallback, SV *val, UV usv, STRLEN pos) {
 
 static void
 xs_utf8_decode_replace(pTHX_ SV *dsv, const U8 *src, STRLEN len, STRLEN off, CV *fallback) {
+#if PERL_REVISION == 5 && PERL_VERSION >= 14
+    const bool do_warn = ckWARN2_d(WARN_UTF8, WARN_NONCHAR);
+#else
     const bool do_warn = ckWARN_d(WARN_UTF8);
+#endif
     STRLEN pos = 0;
     STRLEN skip;
     UV usv;
@@ -326,7 +330,11 @@ xs_utf8_encode_native(pTHX_ SV *dsv, const U8 *src, STRLEN len) {
 
 static void
 xs_utf8_encode_replace(pTHX_ SV *dsv, const U8 *src, STRLEN len, STRLEN off, CV *fallback) {
+#if PERL_REVISION == 5 && PERL_VERSION >= 14
+    const bool do_warn = ckWARN4_d(WARN_UTF8, WARN_NONCHAR, WARN_SURROGATE, WARN_NON_UNICODE);
+#else
     const bool do_warn = ckWARN_d(WARN_UTF8);
+#endif
     STRLEN pos = 0;
     STRLEN skip;
     UV v;
