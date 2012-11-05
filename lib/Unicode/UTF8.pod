@@ -91,13 +91,13 @@ None by default. All functions can be exported using the C<:all> tag or individu
 (W utf8) Encountered an ill-formed UTF-8 octet sequence. <%s> contains a 
 hexadecimal representation of the maximal subpart of the ill-formed subsequence.
 
-=item Can't interchange noncharacter code point U+%.4X at position %u
+=item Can't interchange noncharacter code point U+%X at position %u
 
 (W utf8, nonchar) Noncharacters is permanently reserved for internal use and that
 should never be interchanged. Noncharacters consist of the values U+nFFFE and
 U+nFFFF (where n is from 0 to 10^16) and the values U+FDD0..U+FDEF.
 
-=item Can't represent surrogate code point U+%.4X at position %u in UTF-8 encoding form
+=item Can't represent surrogate code point U+%X at position %u in UTF-8 encoding form
 
 (W utf8, surrogate) Surrogate code points are designated only for surrogate code units in the 
 UTF-16 character encoding form. Surrogates consist of code points in the range 
@@ -114,9 +114,9 @@ of wide characters.
 
 =back
 
-Please note that the sub-categories of utf8 warning C<nonchar>, C<surrogate> 
-and C<non_unicode> is only available on Perl 5.14 or greater. See L<perllexwarn> 
-for available categories and hierarchies.
+Sub-categories of utf8 warning C<nonchar>, C<surrogate> and C<non_unicode> is 
+only available on Perl 5.14 or greater. See L<perllexwarn> for available 
+categories and hierarchies.
 
 =head1 COMPARISON
 
