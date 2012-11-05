@@ -1,4 +1,8 @@
-0.56 2011-11-04
+0.57 2012-11-05
+  - Permit isolated usage of sub-categories non_unicode, nonchar and surrogate
+    on Perl 5.14 or greater. 
+
+0.56 2012-11-04
   - Added a third argument to $fallback, the position of octet/character at 
     which the error occurred.
 
