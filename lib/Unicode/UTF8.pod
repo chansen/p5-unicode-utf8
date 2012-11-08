@@ -6,7 +6,7 @@ Unicode::UTF8 - Encoding and decoding of UTF-8 encoding form
 
     use Unicode::UTF8 qw[decode_utf8 encode_utf8];
     
-    use warnings FATAL => 'utf8'; # Promote decoding/encoding warnings into exceptions
+    use warnings FATAL => 'utf8'; # fatalize encoding glitches
     $string = decode_utf8($octets);
     $octets = encode_utf8($string);
 
@@ -19,14 +19,11 @@ specified by Unicode and ISO/IEC 10646:2011.
 
 =head2 decode_utf8
 
-Returns an decoded representation of C<$octets> in UTF-8 encoding as a character
-string.
-
     $string = decode_utf8($octets);
     $string = decode_utf8($octets, $fallback);
 
-Issues a warning using warnings category C<utf8> if C<$octets> contains 
-ill-formed UTF-8 sequences or encoded code points which can't be interchanged.
+Returns an decoded representation of C<$octets> in UTF-8 encoding as a character
+string.
 
 C<$fallback> is an optional C<CODE> reference which provides a error-handling 
 mechanism, allowing customization of error handling. The default error-handling 
@@ -48,14 +45,11 @@ U+E000..U+10FFFF.
 
 =head2 encode_utf8
 
-Returns an encoded representation of C<$string> in UTF-8 encoding as an octet
-string.
-
     $octets = encode_utf8($string);
     $octets = encode_utf8($string, $fallback);
 
-Issues a warning using warnings category C<utf8> if C<$string> contains 
-code points which can't be interchanged or represented in UTF-8 encoding form.
+Returns an encoded representation of C<$string> in UTF-8 encoding as an octet
+string.
 
 C<$fallback> is an optional C<CODE> reference which provides a error-handling 
 mechanism, allowing customization of error handling. The default error-handling 
@@ -114,9 +108,8 @@ of wide characters.
 
 =back
 
-Sub-categories of utf8 warning C<nonchar>, C<surrogate> and C<non_unicode> is 
-only available on Perl 5.14 or greater. See L<perllexwarn> for available 
-categories and hierarchies.
+The sub-categories: C<nonchar>, C<surrogate> and C<non_unicode> is only available 
+on Perl 5.14 or greater. See L<perllexwarn> for available categories and hierarchies.
 
 =head1 COMPARISON
 
