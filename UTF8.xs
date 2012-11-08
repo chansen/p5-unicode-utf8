@@ -161,19 +161,19 @@ xs_report_unmappable(pTHX_ const UV cp, const STRLEN pos) {
     U32 cat;
 
     if (cp > 0x10FFFF) {
-        fmt = "Can't represent super code point \\x{%"UVXf"} at position %"UVuf" in UTF-8 encoding form";
+        fmt = "Can't represent super code point \\x{%"UVXf"} in position %"UVuf;
         cat = WARN_NON_UNICODE;
     }
     else if (cp >= 0xFDD0 && (cp <= 0xFDEF || (cp & 0xFFFE) == 0xFFFE)) {
-        fmt = "Can't interchange noncharacter code point U+%"UVXf" at position %"UVuf;
+        fmt = "Can't interchange noncharacter code point U+%"UVXf" in position %"UVuf;
         cat = WARN_NONCHAR;
     }
     else if ((cp & 0xF800) == 0xD800) {
-        fmt = "Can't represent surrogate code point U+%"UVXf" at position %"UVuf" in UTF-8 encoding form";
+        fmt = "Can't represent surrogate code point U+%"UVXf" in position %"UVuf;
         cat = WARN_SURROGATE;
     }
     else {
-        fmt = "Can't represent code point U+%04"UVXf" at position %"UVuf" in UTF-8 encoding form";
+        fmt = "Can't represent code point U+%04"UVXf" in position %"UVuf;
         cat = WARN_UTF8;
     }
 
