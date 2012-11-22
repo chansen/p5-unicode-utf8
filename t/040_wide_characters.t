@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More  tests => 3;
+use Test::More  tests => 4;
 use Test::Fatal qw[lives_ok];
 use t::Util     qw[throws_ok];
 
@@ -12,8 +12,11 @@ BEGIN {
 }
 
 {
+    my $got;
+    utf8::decode(my $exp = "blåbär är gött!");
     utf8::upgrade(my $octets = "blåbär är gött!");
-    lives_ok { decode_utf8($octets); } 'decode_utf8() upgraded UTF-8 octets';
+    lives_ok { $got = decode_utf8($octets); } 'decode_utf8() upgraded UTF-8 octets';
+    is($got, $exp, "Got expected string");
 }
 
 {
