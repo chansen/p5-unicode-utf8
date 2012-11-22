@@ -420,14 +420,51 @@ decode_utf8(octets, fallback=NULL)
     src = (const U8 *)SvPV_const(octets, len);
     reuse_sv = SvPV_stealable(octets);
     if (SvUTF8(octets)) {
+        const U8 *p, *e;
+        U8 *d, c;
+
         if (!reuse_sv) {
             octets = sv_newmortal();
-            sv_setpvn(octets, (const char *)src, len);
-            SvUTF8_on(octets);
+            (void)SvUPGRADE(octets, SVt_PV);
+            (void)SvGROW(octets, len + 1);
             reuse_sv = TRUE;
         }
-        if (!sv_utf8_downgrade(octets, TRUE))
-            croak("Can't decode a wide character string");
+        p = (const U8 *)src;
+        e = (const U8 *)src + len - 1;
+        d = (U8 *)SvPVX(octets);
+        while (p < e) {
+            c = *p++;
+            if (c < 0x80) {
+                *d++ = c;
+            }
+            else {
+                if ((c & 0xFE) != 0xC2)
+                    goto error;
+                *d++ = c;
+
+                c = *p++;
+                if ((c & 0xC0) != 0x80)
+                    goto error;
+                *d++ = c;
+            }
+        }
+        if (p < e + 1) {
+            if (*p > 0x7F) {
+                error:
+                  croak("Can't decode a wide character string");
+            }
+            *d++ = *p;
+        }
+        *d = 0;
+        SvCUR_set(octets, d - (U8 *)SvPVX(octets));
+        SvPOK_only(octets);
+
+        if (SvCUR(octets) == len) {
+            ST(0) = octets;
+            SvUTF8_on(octets);
+            XSRETURN(1);
+        }
+
         src = (const U8 *)SvPV_const(octets, len);
     }
     off = xs_utf8_check(src, len);
@@ -496,3 +533,4 @@ encode_utf8(string, fallback=NULL)
             PUSHTARG;
         }
     }
+
