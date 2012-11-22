@@ -263,7 +263,8 @@ xs_utf8_decode_replace(pTHX_ SV *dsv, const U8 *src, STRLEN len, STRLEN off, CV 
     UV usv;
 
     (void)SvUPGRADE(dsv, SVt_PV);
-    (void)SvGROW(dsv, SvCUR(dsv) + off + 1);
+    (void)SvGROW(dsv, off + 1);
+    SvCUR_set(dsv, 0);
     SvPOK_only(dsv);
 
     do {
@@ -340,7 +341,8 @@ xs_utf8_encode_replace(pTHX_ SV *dsv, const U8 *src, STRLEN len, STRLEN off, CV 
     UV v;
 
     (void)SvUPGRADE(dsv, SVt_PV);
-    (void)SvGROW(dsv, SvCUR(dsv) + off + 1);
+    (void)SvGROW(dsv, off + 1);
+    SvCUR_set(dsv, 0);
     SvPOK_only(dsv);
 
     do {
@@ -410,13 +412,8 @@ decode_utf8(octets, fallback=NULL)
     off = xs_utf8_check(src, len);
     if (off == len)
         sv_setpvn(TARG, (const char *)src, len);
-    else {
-        SV *dsv = sv_newmortal();
-        xs_utf8_decode_replace(aTHX_ dsv, src, len, off, fallback);
-        SvUTF8_on(dsv);
-        ST(0) = dsv;
-        XSRETURN(1);
-    }
+    else
+        xs_utf8_decode_replace(aTHX_ TARG, src, len, off, fallback);
     SvUTF8_on(TARG);
     PUSHTARG;
 
@@ -438,12 +435,8 @@ encode_utf8(string, fallback=NULL)
         STRLEN off = xs_utf8_check(src, len);
         if (off == len)
             sv_setpvn(TARG, (const char *)src, len);
-        else {
-            SV *dsv = sv_newmortal();
-            xs_utf8_encode_replace(aTHX_ dsv, src, len, off, fallback);
-            ST(0) = dsv;
-            XSRETURN(1);
-        }
+        else
+            xs_utf8_encode_replace(aTHX_ TARG, src, len, off, fallback);
     }
     SvUTF8_off(TARG);
     PUSHTARG;
