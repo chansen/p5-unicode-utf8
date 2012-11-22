@@ -400,6 +400,10 @@ xs_utf8_encode_native(pTHX_ SV *dsv, const U8 *src, STRLEN len) {
     SvPOK_only(dsv);
 }
 
+#define SvPV_stealable(sv) \
+  ((SvFLAGS(sv) & ~(SVTYPEMASK|SVf_UTF8)) == (SVs_TEMP|SVf_POK|SVp_POK) && \
+   (SvTYPE(sv) == SVt_PV || SvTYPE(sv) == SVt_PVMG) && SvREFCNT(sv) == 1)
+
 MODULE = Unicode::UTF8    PACKAGE = Unicode::UTF8
 
 PROTOTYPES: DISABLE
@@ -409,49 +413,86 @@ decode_utf8(octets, fallback=NULL)
     SV *octets
     CV *fallback
   PREINIT:
-    dXSTARG;
     const U8 *src;
     STRLEN len, off;
+    bool reuse_sv;
   PPCODE:
     src = (const U8 *)SvPV_const(octets, len);
+    reuse_sv = SvPV_stealable(octets);
     if (SvUTF8(octets)) {
-        octets = sv_newmortal();
-        sv_setpvn(octets, (const char *)src, len);
-        SvUTF8_on(octets);
+        if (!reuse_sv) {
+            octets = sv_newmortal();
+            sv_setpvn(octets, (const char *)src, len);
+            SvUTF8_on(octets);
+            reuse_sv = TRUE;
+        }
         if (!sv_utf8_downgrade(octets, TRUE))
             croak("Can't decode a wide character string");
         src = (const U8 *)SvPV_const(octets, len);
     }
     off = xs_utf8_check(src, len);
-    if (off == len)
-        sv_setpvn(TARG, (const char *)src, len);
-    else
+    if (off == len) {
+        if (reuse_sv) {
+            ST(0) = octets;
+            SvUTF8_on(octets);
+            XSRETURN(1);
+        }
+        else {
+            dXSTARG;
+            sv_setpvn(TARG, (const char *)src, len);
+            SvUTF8_on(TARG);
+            PUSHTARG;
+        }
+    }
+    else {
+        dXSTARG;
         xs_utf8_decode_replace(aTHX_ TARG, src, len, off, fallback);
-    SvUTF8_on(TARG);
-    PUSHTARG;
+        SvUTF8_on(TARG);
+        PUSHTARG;
+    }
 
 void
 encode_utf8(string, fallback=NULL)
     SV *string
     CV *fallback
   PREINIT:
-    dXSTARG;
     const U8 *src;
     STRLEN len;
+    bool reuse_sv;
   PPCODE:
     src = (const U8 *)SvPV_const(string, len);
+    reuse_sv = SvPV_stealable(string);
     if (!SvUTF8(string)) {
-        xs_utf8_encode_native(aTHX_ TARG, src, len);
-        SvTAINT(TARG);
+        if (reuse_sv) {
+            xs_utf8_encode_native(aTHX_ string, src, len);
+            ST(0) = string;
+            XSRETURN(1);
+        }
+        else {
+            dXSTARG;
+            xs_utf8_encode_native(aTHX_ TARG, src, len);
+            SvTAINT(TARG);
+            PUSHTARG;
+        }
     }
     else {
         STRLEN off = xs_utf8_check(src, len);
-        if (off == len)
-            sv_setpvn(TARG, (const char *)src, len);
-        else
+        if (off == len) {
+            if (reuse_sv) {
+                ST(0) = string;
+                SvUTF8_off(string);
+                XSRETURN(1);
+            }
+            else {
+                dXSTARG;
+                sv_setpvn(TARG, (const char *)src, len);
+                SvUTF8_off(TARG);
+                PUSHTARG;
+            }
+        }
+        else {
+            dXSTARG;
             xs_utf8_encode_replace(aTHX_ TARG, src, len, off, fallback);
+            PUSHTARG;
+        }
     }
-    SvUTF8_off(TARG);
-    PUSHTARG;
-
-
