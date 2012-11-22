@@ -212,9 +212,6 @@ xs_report_illformed(pTHX_ const U8 *s, STRLEN len, const char *enc, STRLEN pos, 
 }
 
 static void
-xs_utf8_encode_native(pTHX_ SV *, const U8 *, STRLEN);
-
-static void
 xs_handle_fallback(pTHX_ SV *dsv, CV *fallback, SV *val, UV usv, STRLEN pos) {
     dSP;
     SV *str;
@@ -241,10 +238,27 @@ xs_handle_fallback(pTHX_ SV *dsv, CV *fallback, SV *val, UV usv, STRLEN pos) {
 
     str = POPs;
     src = SvPV_const(str, len);
-    if (!SvUTF8(str))
-        xs_utf8_encode_native(aTHX_ dsv, (const U8 *)src, len);
-    else
+    if (SvUTF8(str))
         sv_catpvn_nomg(dsv, src, len); /* XXX validate? */
+    else {
+        const char *end = src + len;
+        U8 *d;
+
+        (void)SvGROW(dsv, SvCUR(dsv) + len * 2 + 1);
+        d = (U8 *)SvPVX(dsv) + SvCUR(dsv);
+
+        for (; src < end; src++) {
+            const U8 c = (U8)*src;
+            if (c < 0x80)
+                *d++ = c;
+            else {
+                *d++ = (U8)(0xC0 | ((c >> 6) & 0x1F));
+                *d++ = (U8)(0x80 | ((c     ) & 0x3F));
+            }
+        }
+        *d = 0;
+        SvCUR_set(dsv, d - (U8 *)SvPVX(dsv));
+    }
 
     PUTBACK;
     FREETMPS;
@@ -306,30 +320,6 @@ xs_utf8_decode_replace(pTHX_ SV *dsv, const U8 *src, STRLEN len, STRLEN off, CV 
 }
 
 static void
-xs_utf8_encode_native(pTHX_ SV *dsv, const U8 *src, STRLEN len) {
-    const U8 *send;
-    U8 *d;
-
-    (void)SvUPGRADE(dsv, SVt_PV);
-    SvGROW(dsv, SvCUR(dsv) + len * 2 + 1);
-    d    = (U8 *)SvPVX(dsv) + SvCUR(dsv);
-    send = src + len;
-
-    for (; src < send; src++) {
-        const U8 c = *src;
-        if (c < 0x80)
-            *d++ = c;
-        else {
-            *d++ = (U8)(0xC0 | ((c >>  6) & 0x1F));
-            *d++ = (U8)(0x80 | ( c        & 0x3F));
-        }
-    }
-    *d = 0;
-    SvCUR_set(dsv, d - (U8 *)SvPVX(dsv));
-    SvPOK_only(dsv);
-}
-
-static void
 xs_utf8_encode_replace(pTHX_ SV *dsv, const U8 *src, STRLEN len, STRLEN off, CV *fallback) {
 #if PERL_REVISION == 5 && PERL_VERSION >= 14
     const bool do_warn = ckWARN4_d(WARN_UTF8, WARN_NONCHAR, WARN_SURROGATE, WARN_NON_UNICODE);
@@ -385,6 +375,29 @@ xs_utf8_encode_replace(pTHX_ SV *dsv, const U8 *src, STRLEN len, STRLEN off, CV 
             break;
         }
     } while (len);
+}
+
+static void
+xs_utf8_encode_native(pTHX_ SV *dsv, const U8 *src, STRLEN len) {
+    const U8 *end = src + len;
+    U8 *d;
+
+    (void)SvUPGRADE(dsv, SVt_PV);
+    (void)SvGROW(dsv, len * 2 + 1);
+    d = (U8 *)SvPVX(dsv);
+
+    for (; src < end; src++) {
+        const U8 c = *src;
+        if (c < 0x80)
+            *d++ = c;
+        else {
+            *d++ = (U8)(0xC0 | ((c >> 6) & 0x1F));
+            *d++ = (U8)(0x80 | ((c     ) & 0x3F));
+        }
+    }
+    *d = 0;
+    SvCUR_set(dsv, d - (U8 *)SvPVX(dsv));
+    SvPOK_only(dsv);
 }
 
 MODULE = Unicode::UTF8    PACKAGE = Unicode::UTF8
