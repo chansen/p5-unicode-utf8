@@ -124,7 +124,7 @@ Simple API which makes use of Perl's standard warning categories.
 
 =item *
 
-Recognizes all noncharacters regardless of perl version
+Recognizes all noncharacters regardless of Perl version
 
 =item *
 
@@ -132,7 +132,7 @@ Implements Unicode's recommended practice for using U+FFFD.
 
 =item *
 
-Good diagnostics in warning/exception messages
+Better diagnostics in warning messages
 
 =item *
 
