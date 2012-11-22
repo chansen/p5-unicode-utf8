@@ -421,7 +421,7 @@ decode_utf8(octets, fallback=NULL)
     reuse_sv = SvPV_stealable(octets);
     if (SvUTF8(octets)) {
         const U8 *p, *e;
-        U8 *d, c;
+        U8 *d, c, v;
 
         if (!reuse_sv) {
             octets = sv_newmortal();
@@ -440,12 +440,11 @@ decode_utf8(octets, fallback=NULL)
             else {
                 if ((c & 0xFE) != 0xC2)
                     goto error;
-                *d++ = c;
-
+                v = (c & 0x1F) << 6;
                 c = *p++;
                 if ((c & 0xC0) != 0x80)
                     goto error;
-                *d++ = c;
+                *d++ = (U8)(v | (c & 0x3F));
             }
         }
         if (p < e + 1) {
