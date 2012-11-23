@@ -438,6 +438,42 @@ xs_utf8_encode_native_inplace(pTHX_ SV *sv, const U8 *s, STRLEN len) {
     SvPOK_only(sv);
 }
 
+static void
+xs_utf8_downgrade(pTHX_ SV *dsv, const U8 *s, STRLEN len) {
+    const U8 *e = s + len - 1;
+    U8 *d, c, v;
+
+    (void)SvUPGRADE(dsv, SVt_PV);
+    (void)SvGROW(dsv, len + 1);
+    d = (U8 *)SvPVX(dsv);
+
+    while (s < e) {
+        c = *s++;
+        if (c < 0x80)
+            *d++ = c;
+        else {
+            if ((c & 0xFE) != 0xC2)
+                goto error;
+            v = (c & 0x1F) << 6;
+            c = *s++;
+            if ((c & 0xC0) != 0x80)
+                goto error;
+            *d++ = (U8)(v | (c & 0x3F));
+        }
+    }
+    if (s < e + 1) {
+        if (*s < 0x80)
+            *d++ = *s;
+        else {
+          error:
+            croak("Can't decode a wide character string");
+        }
+    }
+    *d = 0;
+    SvCUR_set(dsv, d - (U8 *)SvPVX(dsv));
+    SvPOK_only(dsv);
+}
+
 /* SVt_PV, SVt_PVIV, SVt_PVNV, SVt_PVMG */
 #define SvPV_stealable(sv) \
   ((SvFLAGS(sv) & ~(SVTYPEMASK|SVf_UTF8)) == (SVs_TEMP|SVf_POK|SVp_POK) && \
@@ -459,50 +495,16 @@ decode_utf8(octets, fallback=NULL)
     src = (const U8 *)SvPV_const(octets, len);
     reuse_sv = SvPV_stealable(octets);
     if (SvUTF8(octets)) {
-        const U8 *p, *e;
-        U8 *d, c, v;
-
         if (!reuse_sv) {
             octets = sv_newmortal();
-            (void)SvUPGRADE(octets, SVt_PV);
-            (void)SvGROW(octets, len + 1);
             reuse_sv = TRUE;
         }
-        p = (const U8 *)src;
-        e = (const U8 *)src + len - 1;
-        d = (U8 *)SvPVX(octets);
-        while (p < e) {
-            c = *p++;
-            if (c < 0x80) {
-                *d++ = c;
-            }
-            else {
-                if ((c & 0xFE) != 0xC2)
-                    goto error;
-                v = (c & 0x1F) << 6;
-                c = *p++;
-                if ((c & 0xC0) != 0x80)
-                    goto error;
-                *d++ = (U8)(v | (c & 0x3F));
-            }
-        }
-        if (p < e + 1) {
-            if (*p > 0x7F) {
-                error:
-                  croak("Can't decode a wide character string");
-            }
-            *d++ = *p;
-        }
-        *d = 0;
-        SvCUR_set(octets, d - (U8 *)SvPVX(octets));
-        SvPOK_only(octets);
-
+        xs_utf8_downgrade(aTHX_ octets, src, len);
         if (SvCUR(octets) == len) {
             ST(0) = octets;
             SvUTF8_on(octets);
             XSRETURN(1);
         }
-
         src = (const U8 *)SvPV_const(octets, len);
     }
     off = xs_utf8_check(src, len);
