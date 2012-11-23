@@ -438,9 +438,10 @@ xs_utf8_encode_native_inplace(pTHX_ SV *sv, const U8 *s, STRLEN len) {
     SvPOK_only(sv);
 }
 
+/* SVt_PV, SVt_PVIV, SVt_PVNV, SVt_PVMG */
 #define SvPV_stealable(sv) \
   ((SvFLAGS(sv) & ~(SVTYPEMASK|SVf_UTF8)) == (SVs_TEMP|SVf_POK|SVp_POK) && \
-   (SvTYPE(sv) == SVt_PV || SvTYPE(sv) == SVt_PVMG) && SvREFCNT(sv) == 1)
+   (SvTYPE(sv) >= SVt_PV && SvTYPE(sv) <= SVt_PVMG) && SvREFCNT(sv) == 1)
 
 MODULE = Unicode::UTF8    PACKAGE = Unicode::UTF8
 
