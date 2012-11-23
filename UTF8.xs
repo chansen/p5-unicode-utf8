@@ -400,6 +400,44 @@ xs_utf8_encode_native(pTHX_ SV *dsv, const U8 *src, STRLEN len) {
     SvPOK_only(dsv);
 }
 
+static void
+xs_utf8_encode_native_inplace(pTHX_ SV *sv, const U8 *s, STRLEN len) {
+    const U8 *p = s;
+    const U8 *e = s + len;
+
+    while (p < e && *p < 0x80)
+        p++;
+
+    if (p != e) {
+        STRLEN size, off;
+        U8 *d;
+
+        off = p - s;
+        size = len;
+        while (p < e)
+            size += (*p++ > 0x7F);
+
+        if (SvLEN(sv) < size + 1) {
+            (void)sv_grow(sv, size + 1);
+            s = (const U8 *)SvPVX(sv);
+            e = s + len;
+        }
+        d = (U8 *)SvPVX(sv) + size;
+        *d = 0;
+        for (s += off, e--; e >= s; e--) {
+            const U8 c = *e;
+            if (c < 0x80)
+                *--d = c;
+            else {
+                *--d = (U8)(0x80 | ((c     ) & 0x3F));
+                *--d = (U8)(0xC0 | ((c >> 6) & 0x1F));
+            }
+        }
+        SvCUR_set(sv, size);
+    }
+    SvPOK_only(sv);
+}
+
 #define SvPV_stealable(sv) \
   ((SvFLAGS(sv) & ~(SVTYPEMASK|SVf_UTF8)) == (SVs_TEMP|SVf_POK|SVp_POK) && \
    (SvTYPE(sv) == SVt_PV || SvTYPE(sv) == SVt_PVMG) && SvREFCNT(sv) == 1)
@@ -500,7 +538,7 @@ encode_utf8(string, fallback=NULL)
     reuse_sv = SvPV_stealable(string);
     if (!SvUTF8(string)) {
         if (reuse_sv) {
-            xs_utf8_encode_native(aTHX_ string, src, len);
+            xs_utf8_encode_native_inplace(aTHX_ string, src, len);
             ST(0) = string;
             XSRETURN(1);
         }
