@@ -1,3 +1,14 @@
+0.58
+  - decode_utf8()/encode_utf8() now tries to avoid copying values returned 
+    from a subroutine, ARRAY functions (delete, pop, shift, splice) and HASH 
+    functions (delete). 
+    Following examples is zero-copy if the returned value is a string:
+      - decode_utf8(function());
+      - decode_utf8(delete $hash{Key});
+      - deocde_utf8(shift @array);
+  - Optimized decoding of upgraded octets.
+  - Removed suffix "in UTF-8 encoding form" from warnings messages
+
 0.57 2012-11-05
   - Permit isolated usage of sub-categories non_unicode, nonchar and surrogate
     on Perl 5.14 or greater. 
