@@ -1,4 +1,11 @@
-0.58
+0.59 2013-03-28
+  - No functional changes in this release
+  - 5.17.7 introduced a new copy-on-write mechanism which was disabled in
+    5.17.10 due too many rough edges. Skip one test if running on these Perl 
+    versions.
+    http://search.cpan.org/dist/perl-5.17.10/pod/perldelta.pod#Internal_Changes
+
+0.58 2012-12-15
   - decode_utf8()/encode_utf8() now tries to avoid copying values returned 
     from a subroutine, ARRAY functions (delete, pop, shift, splice) and HASH 
     functions (delete). 
