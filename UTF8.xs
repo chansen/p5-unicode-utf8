@@ -564,3 +564,20 @@ encode_utf8(string, fallback=NULL)
         }
     }
 
+void
+valid_utf8(octets)
+    SV *octets
+  PREINIT:
+    const U8 *src;
+    STRLEN len;
+  PPCODE:
+    src = (const U8 *)SvPV_const(octets, len);
+    if (SvUTF8(octets)) {
+        octets = sv_mortalcopy(octets);
+        if (!sv_utf8_downgrade(octets, TRUE))
+            croak("Can't validate a wide character string");
+        src = (const U8 *)SvPV_const(octets, len);
+    }
+    ST(0) = boolSV(xs_utf8_check(src, len) == len);
+    XSRETURN(1);
+

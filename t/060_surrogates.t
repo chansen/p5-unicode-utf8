@@ -3,12 +3,13 @@
 use strict;
 use warnings;
 
-use Test::More tests => 4097;
+use Test::More tests => 6145;
 use t::Util    qw[throws_ok pack_utf8];
 
 BEGIN {
     use_ok('Unicode::UTF8', qw[ decode_utf8
-                                encode_utf8 ]);
+                                encode_utf8 
+                                valid_utf8 ]);
 }
 
 my @SURROGATES = (0xD800 .. 0xDFFF);
@@ -35,5 +36,14 @@ foreach my $cp (@SURROGATES) {
         use warnings FATAL => 'utf8';
         encode_utf8($string); 
     } qr/Can't represent surrogate code point/, $name;
+}
+
+foreach my $cp (@SURROGATES) {
+    my $octets = pack_utf8($cp);
+
+    my $name = sprintf 'valid_utf8(<%s>) surrogate U+%.4X',
+      join(' ', map { sprintf '%.2X', ord $_ } split //, $octets), $cp;
+
+    ok(!valid_utf8($octets), $name);
 }
 

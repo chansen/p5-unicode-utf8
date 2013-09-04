@@ -3,12 +3,13 @@
 use strict;
 use warnings;
 
-use Test::More tests => 397;
+use Test::More tests => 463;
 use t::Util    qw[throws_ok warns_ok pack_utf8];
 
 BEGIN {
     use_ok('Unicode::UTF8', qw[ decode_utf8
-                                encode_utf8 ]);
+                                encode_utf8 
+                                valid_utf8 ]);
 }
 
 my @NONCHARACTERS = (0xFDD0 .. 0xFDEF);
@@ -62,5 +63,14 @@ foreach my $cp (@NONCHARACTERS) {
     } $match, "$name issues a warning";
 
     is($got, $exp, "$name returned encoded U+FFFD");
+}
+
+foreach my $cp (@NONCHARACTERS) {
+    my $octets = pack_utf8($cp);
+
+    my $name = sprintf 'valid_utf8(<%s>) noncharacter U+%.4X',
+      join(' ', map { sprintf '%.2X', ord $_ } split //, $octets), $cp;
+
+    ok(!valid_utf8($octets), $name);
 }
 

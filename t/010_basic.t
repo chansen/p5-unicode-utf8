@@ -3,13 +3,14 @@
 use strict;
 use warnings;
 
-use Test::More  tests => 1093;
+use Test::More  tests => 1366;
 use Test::Fatal qw[lives_ok];
 use t::Util     qw[pack_utf8 slurp];
 
 BEGIN {
     use_ok('Unicode::UTF8', qw[ decode_utf8
-                                encode_utf8 ]);
+                                encode_utf8 
+                                valid_utf8 ]);
 }
 
 for (my $cp = 0x00; $cp < 0x10FFFF; $cp += 0x1000) {
@@ -26,6 +27,13 @@ for (my $cp = 0x00; $cp < 0x10FFFF; $cp += 0x1000) {
             $got = decode_utf8($octets);
         } $name;
         is($got, $string, $name);
+    }
+
+    {
+        my $name = sprintf 'valid_utf8(<%s>) U+%.4X',
+          join(' ', map { sprintf '%.2X', ord $_ } split //, $octets), $cp;
+
+        ok(valid_utf8($octets), $name);
     }
 
     {
@@ -61,6 +69,10 @@ for (my $cp = 0x00; $cp < 0x10FFFF; $cp += 0x1000) {
             $got = decode_utf8($octets);
         } 'decode_utf8(quickbrown.txt)';
         is($got, $string, 'decode_utf8(quickbrown.txt) result');
+    }
+
+    {
+        ok(valid_utf8($octets), 'valid_utf8(quickbrown.txt)');
     }
 
     {
