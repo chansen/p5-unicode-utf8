@@ -68,6 +68,13 @@ C<$fallback> must return a character string consisting of zero or more Unicode
 scalar values.Unicode scalar values consist of code points in the range 
 U+0000..U+D7FF and U+E000..U+10FFFF.
 
+=head2 valid_utf8
+
+    $boolean = valid_utf8($octets);
+
+Returns a boolean indicating whether or not the given C<$octets> consist of 
+well-formed UTF-8 sequences.
+
 =head1 EXPORTS
 
 None by default. All functions can be exported using the C<:all> tag or individually.
@@ -77,6 +84,10 @@ None by default. All functions can be exported using the C<:all> tag or individu
 =over 4
 
 =item Can't decode a wide character string
+
+(F) Wide character in octets.
+
+=item Can't validate a wide character string
 
 (F) Wide character in octets.
 
