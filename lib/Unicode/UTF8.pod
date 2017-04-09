@@ -163,7 +163,7 @@ see benchmarks directory in git repository)
 
 =head1 CONFORMANCE
 
-It's the author's believe that this UTF-8 implementation is conformant with 
+It's the author's belief that this UTF-8 implementation is conformant with 
 the Unicode Standard Version 6.0. Any deviations from the Unicode Standard 
 is to be considered a bug.
 
