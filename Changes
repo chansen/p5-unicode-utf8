@@ -1,5 +1,5 @@
-0.61
-  - Avoid relying on . being in @INC
+0.61 2017-04-10
+  - Avoid relying on current working directory being in @INC
   - Documentation typo fixes by Andreas Guldstrand (COFFEE)
 
 0.60 2013-09-24
