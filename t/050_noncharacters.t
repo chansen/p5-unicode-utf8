@@ -2,9 +2,10 @@
 
 use strict;
 use warnings;
+use lib 't';
 
 use Test::More tests => 463;
-use t::Util    qw[throws_ok warns_ok pack_utf8];
+use Util       qw[throws_ok warns_ok pack_utf8];
 
 BEGIN {
     use_ok('Unicode::UTF8', qw[ decode_utf8

@@ -2,10 +2,11 @@
 
 use strict;
 use warnings;
+use lib 't';
 
 use Test::More  tests => 1366;
 use Test::Fatal qw[lives_ok];
-use t::Util     qw[pack_utf8 slurp];
+use Util        qw[pack_utf8 slurp];
 
 BEGIN {
     use_ok('Unicode::UTF8', qw[ decode_utf8

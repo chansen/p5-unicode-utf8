@@ -2,10 +2,11 @@
 
 use strict;
 use warnings;
+use lib 't';
 
 use Test::More tests => 46;
 use Encode     qw[_utf8_on];
-use t::Util    qw[throws_ok pack_overlong_utf8];
+use Util       qw[throws_ok pack_overlong_utf8];
 
 BEGIN {
     use_ok('Unicode::UTF8', qw[ decode_utf8

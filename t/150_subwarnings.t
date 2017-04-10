@@ -2,10 +2,11 @@
 
 use strict;
 use warnings;
+use lib 't';
 
 use Test::More;
 use Test::Fatal qw[lives_ok];
-use t::Util     qw[throws_ok warns_ok];
+use Util        qw[throws_ok warns_ok];
 
 BEGIN {
     plan skip_all => 'Perl 5.14 required for this test' if $] < 5.014;
