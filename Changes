@@ -1,5 +1,6 @@
 0.61
-  - Typo fixes by pink-mist
+  - Avoid relying on . being in @INC
+  - Documentation typo fixes by Andreas Guldstrand (COFFEE)
 
 0.60 2013-09-24
   - added valid_utf8()
