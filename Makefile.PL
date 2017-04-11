@@ -10,9 +10,6 @@ BEGIN {
     my @required = (
         'inc::Module::Install'           => '1.00',
         'Module::Install::ReadmeFromPod' => '0',
-        'Test::More'                     => '0.47',
-        'Test::Fatal'                    => '0',
-        'Encode'                         => '1.9801',
     );
 
     my @missing;
