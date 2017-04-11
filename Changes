@@ -1,3 +1,6 @@
+0.62 2017-04-11
+  - Only check for missing Module::Install related modules in Makefile.PL
+
 0.61 2017-04-10
   - Avoid relying on current working directory being in @INC
   - Documentation typo fixes by Andreas Guldstrand (COFFEE)
