@@ -1,5 +1,6 @@
 #!perl
 
+use Config;
 use strict;
 use warnings;
 use lib 't';
@@ -16,8 +17,12 @@ my @SUPER = ();
     for (my $i = 0x0011_0000; $i < 0x7FFF_FFFF; $i += 0x200000) {
         push @SUPER, $i;
     }
-    for (my $i = 0x8000_0000; $i < 0xFFFF_FFFF; $i += 0x400000) {
-        push @SUPER, $i;
+
+    # Doesn't work on 32 bit.
+    if ($Config{ivsize} > 4) {
+        for (my $i = 0x8000_0000; $i < 0xFFFF_FFFF; $i += 0x400000) {
+            push @SUPER, $i;
+        }
     }
 }
 
