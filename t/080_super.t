@@ -19,7 +19,7 @@ my @SUPER = ();
     }
 
     # Doesn't work on 32 bit.
-    if ($Config{ptrsize} == 8) {
+    if ($Config{ivsize} > 4) {
         for (my $i = 0x8000_0000; $i < 0xFFFF_FFFF; $i += 0x400000) {
             push @SUPER, $i;
         }
