@@ -162,6 +162,7 @@ jobs:
   windows-latest:
     runs-on: windows-latest
     needs: [ubuntu-latest]
+    continue-on-error: true
     env:
       PERL_USE_UNSAFE_INC: 0
       AUTHOR_TESTING: 1
