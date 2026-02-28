@@ -1,5 +1,6 @@
 use lib '.';
 use strict;
+use warnings;
 
 ("\t" eq "\x09")
   or die("OS unsupported\n");
@@ -10,6 +11,7 @@ BEGIN {
     my @required = (
         'inc::Module::Install'           => '1.00',
         'Module::Install::ReadmeFromPod' => '0',
+        'Module::Install::XSUtil'        => '0',
     );
 
     my @missing;
@@ -44,6 +46,7 @@ test_requires  'Test::More'  => '0.47';
 test_requires  'Test::Fatal' => '0.006';
 test_requires  'Encode'      => '1.9801';
 makemaker_args INC => '-I.';
+#makemaker_args CCFLAGS => '-Wno-deprecated-declarations';
 
 tests 't/*.t t/*/*.t';
 

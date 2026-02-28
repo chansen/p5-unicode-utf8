@@ -146,7 +146,9 @@ Preserves taintedness of decoded C<$octets> or encoded C<$string>
 =item *
 
 Better performance ~ 600% - 1200% (JA: 600%, AR: 700%, SV: 900%, EN: 1200%, 
-see benchmarks directory in git repository)
+see benchmarks directory in git repository).
+
+With modern Perl (v5.42)/Encode (v3.21): Performance ~ 30% - 2000% (JA: 30%, AR: 100%, SV: 300%, EN: 2000%).
 
 =back
 
