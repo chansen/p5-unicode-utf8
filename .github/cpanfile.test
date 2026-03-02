@@ -1,0 +1,13 @@
+requires 'ExtUtils::MakeMaker';
+requires 'Module::Install';
+requires 'Module::Install::ReadmeFromPod';
+
+on 'test' => sub {
+    requires 'Test::More'  => '0.47';
+    requires 'Test::Fatal' => '0.006';
+    requires 'Encode'           => '1.9801';
+    requires 'Test::LeakTrace'  => '0.10';
+    requires 'Taint::Runtime'   => '0.03';
+    requires 'Variable::Magic';
+    requires 'Test::Pod'        => '1.00';
+};
