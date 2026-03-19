@@ -11,7 +11,7 @@
 static inline STRLEN
 xs_utf8_check(const U8 *src, STRLEN len) {
   STRLEN off;
-  utf8_check((const char *)src, len, &off);
+  utf8_check_ascii((const char *)src, len, &off);
   return off;
 };
 
@@ -343,7 +343,7 @@ decode_utf8(octets, fallback=NULL)
         }
         src = (const U8 *)SvPV_const(octets, len);
     }
-    if (utf8_check((const char *)src, len, &off)) {
+    if (utf8_check_ascii((const char *)src, len, &off)) {
         if (reuse_sv) {
             ST(0) = octets;
             SvUTF8_on(octets);
@@ -389,7 +389,7 @@ encode_utf8(string, fallback=NULL)
     }
     else {
         STRLEN off;
-        if (utf8_check((const char *)src, len, &off)) {
+        if (utf8_check_ascii((const char *)src, len, &off)) {
             if (reuse_sv) {
                 ST(0) = string;
                 SvUTF8_off(string);
@@ -423,6 +423,6 @@ valid_utf8(octets)
             croak("Can't validate a wide character string");
         src = SvPV_const(octets, len);
     }
-    ST(0) = boolSV(utf8_valid(src, len));
+    ST(0) = boolSV(utf8_valid_ascii(src, len));
     XSRETURN(1);
 
