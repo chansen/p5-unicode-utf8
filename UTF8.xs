@@ -5,29 +5,8 @@
 #define NEED_sv_2pv_flags
 #include "ppport.h"
 
-#if defined(BYTEORDER) && (BYTEORDER == 0x4321 || BYTEORDER == 0x87654321)
-#  define UTF8_VALID_ENDIAN_BIG 1
-#elif defined(BYTEORDER) && (BYTEORDER == 0x1234 || BYTEORDER == 0x12345678)
-#  define UTF8_VALID_ENDIAN_BIG 0
-#else
-#  error "Unknown byte order"
-#endif
-
-#ifndef UTF8_VALID_FAST_PATH16
-#  define UTF8_VALID_FAST_PATH16 1
-#endif
-
-#ifndef UTF8_VALID_FAST_PATH4
-#  define UTF8_VALID_FAST_PATH4 1
-#endif
-
+#include "utf8_dfa32.h"
 #include "utf8_valid.h"
-
-#ifndef WARN_NON_UNICODE
-# define WARN_NON_UNICODE WARN_UTF8
-# define WARN_NONCHAR WARN_UTF8
-# define WARN_SURROGATE WARN_UTF8
-#endif
 
 static inline STRLEN
 xs_utf8_check(const U8 *src, STRLEN len) {
