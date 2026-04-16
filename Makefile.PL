@@ -10,12 +10,15 @@ use ExtUtils::MakeMaker;
 use Devel::AssertC99;
 ("\t" eq "\x09")
   or die("OS unsupported\n");
+use Devel::PPPort;
+Devel::PPPort::WriteFile();
 
 my %WriteMakefileArgs = (
   "ABSTRACT" => "Encoding and decoding of UTF-8 encoding form",
   "AUTHOR" => "Christian Hansen <chansen\@cpan.org>",
   "CONFIGURE_REQUIRES" => {
     "Devel::AssertC99" => 0,
+    "Devel::PPPort" => 0,
     "ExtUtils::MakeMaker" => 0
   },
   "DISTNAME" => "Unicode-UTF8",
