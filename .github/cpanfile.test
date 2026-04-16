@@ -1,6 +1,7 @@
 requires 'ExtUtils::MakeMaker';
 requires 'Module::Install';
 requires 'Module::Install::ReadmeFromPod';
+requires 'Devel::AssertC99';
 
 on 'test' => sub {
     requires 'Test::More'  => '0.47';
