@@ -8,6 +8,12 @@
 #include "utf8_dfa32.h"
 #include "utf8_valid.h"
 
+#ifndef WARN_NON_UNICODE
+# define WARN_NON_UNICODE WARN_UTF8
+# define WARN_NONCHAR WARN_UTF8
+# define WARN_SURROGATE WARN_UTF8
+#endif
+
 static inline STRLEN
 xs_utf8_check(const U8 *src, STRLEN len) {
   STRLEN off;
