@@ -38,13 +38,13 @@ my $BENCH_SECONDS = 20;
 sub format_size {
   my ($n) = @_;
   if ($n >= 1024 * 1024 * 1024) {
-    return sprintf '%.0f GB', $n / (1024 * 1024 * 1024);
+    return sprintf '%.0f GiB', $n / (1024 * 1024 * 1024);
   }
   if ($n >= 1024 * 1024.0) {
-    return sprintf '%.0f MB', $n / (1024 * 1024);
+    return sprintf '%.0f MiB', $n / (1024 * 1024);
   }
   if ($n >= 1024) {
-    return sprintf '%.0f KB', $n / 1024;
+    return sprintf '%.0f KiB', $n / 1024;
   }
   return sprintf '%d bytes', $n;
 }
@@ -73,7 +73,7 @@ sub bench {
     $iters++;
   }
   my $elapsed = clock_gettime(CLOCK_MONOTONIC) - $t;
-  return $iters / $elapsed * $mb;
+  return $iters / $elapsed * (length($octets) / (1000 * 1000));
 }
 
 my @benchmark = (
@@ -123,8 +123,8 @@ foreach my $doc (@docs) {
 
   printf "  %-19s  %8.0f MB/s\n", $sorted[0][0], $sorted[0][1];
   foreach my $i (1 .. $#sorted) {
-    printf "  %-19s  %8.0f MB/s  (%+.0f%%)\n",
-      $sorted[$i][0], $sorted[$i][1], ($sorted[$i][1] / $slowest - 1) * 100;
+    printf "  %-19s  %8.0f MB/s  (%.2fx)\n",
+      $sorted[$i][0], $sorted[$i][1], $sorted[$i][1] / $slowest;
   }
   print "\n";
 }
