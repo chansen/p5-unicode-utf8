@@ -101,8 +101,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: perl -V
-      - name: install deps using cpm
-        uses: perl-actions/install-with-cpm@v1
+      - name: install deps using cpanm
+        uses: perl-actions/install-with-cpanm@v1
         with:
           sudo: false
           cpanfile: ".github/cpanfile.test"
@@ -142,8 +142,8 @@ jobs:
           apt-get install -y perl make gcc sudo curl) ||
           (yum install --skip-broken -y openssl perl make gcc sudo curl)
       - run: perl -V
-      - name: install deps using cpm
-        uses: perl-actions/install-with-cpm@v1
+      - name: install deps using cpanm
+        uses: perl-actions/install-with-cpanm@v1
         with:
             sudo: false
             cpanfile: ".github/cpanfile.test"
