@@ -17,6 +17,10 @@
 # define WARN_SURROGATE WARN_UTF8
 #endif
 
+#ifndef SvPVCLEAR  
+# define SvPVCLEAR(sv) sv_setpvs((sv), "")
+#endif
+
 static inline STRLEN
 xs_utf8_check(const U8 *src, STRLEN len) {
   STRLEN off;
