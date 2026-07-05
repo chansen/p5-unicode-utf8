@@ -5,13 +5,14 @@
 use strict;
 use warnings;
 
+use 5.008001;
 use ExtUtils::MakeMaker;
 
 use Devel::AssertC99;
 ("\t" eq "\x09")
   or die("OS unsupported\n");
 use Devel::PPPort;
-Devel::PPPort::WriteFile();
+Devel::PPPort::WriteFile() unless -e 'ppport.h';
 
 my %WriteMakefileArgs = (
   "ABSTRACT" => "Encoding and decoding of UTF-8 encoding form",
@@ -23,6 +24,7 @@ my %WriteMakefileArgs = (
   },
   "DISTNAME" => "Unicode-UTF8",
   "LICENSE" => "perl",
+  "MIN_PERL_VERSION" => "5.008001",
   "NAME" => "Unicode::UTF8",
   "PREREQ_PM" => {
     "Carp" => 0,
@@ -36,7 +38,7 @@ my %WriteMakefileArgs = (
     "Test::Fatal" => "0.006",
     "Test::More" => "0.47"
   },
-  "VERSION" => "0.70",
+  "VERSION" => "0.71",
   "test" => {
     "TESTS" => "t/*.t t/*/*.t"
   }
