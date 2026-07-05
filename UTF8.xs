@@ -7,6 +7,9 @@
 
 #include "utf8_dfa32.h"
 #include "utf8_valid.h"
+#include "utf8_valid_stream.h"
+#include "utf8_distance_unsafe.h"
+#include "utf8_advance_forward_unsafe.h"
 
 #ifndef WARN_NON_UNICODE
 # define WARN_NON_UNICODE WARN_UTF8
@@ -71,6 +74,27 @@ xs_report_illformed(pTHX_ const U8 *s, STRLEN len, const char *enc, STRLEN pos, 
     Perl_croak(aTHX_ fmt, enc, seq, (UV)pos);
   else
     Perl_warner(aTHX_ packWARN(WARN_UTF8), fmt, enc, seq, (UV)pos);
+}
+
+static void
+xs_report_illformed_read(pTHX_ const char* cur, STRLEN len, bool eof) {
+  static const char hex[] = "0123456789ABCDEF";
+  char seq[4 * 3];
+  char* d = seq;
+  STRLEN n = len;
+  const char* fmt =
+      eof ? "Can't decode ill-formed UTF-8 octet sequence <%s> at end of file"
+          : "Can't decode ill-formed UTF-8 octet sequence <%s>";
+
+  while (n-- > 0) {
+    const U8 c = (U8)*cur++;
+    *d++ = hex[c >> 4];
+    *d++ = hex[c & 0xF];
+    if (n)
+      *d++ = ' ';
+  }
+  *d = '\0';
+  Perl_warner(aTHX_ packWARN(WARN_UTF8), fmt, seq);
 }
 
 static void
@@ -414,6 +438,130 @@ encode_utf8(string, fallback=NULL)
         PUSHTARG;
       }
     }
+
+IV
+read_utf8(fh, bufsv, length, offset = 0)
+    PerlIO *fh
+    SV     *bufsv
+    IV     length
+    IV     offset
+  PROTOTYPE:
+    *$$;$
+  CODE:
+  {
+    utf8_valid_stream_t s;
+    UV got = 0;           // code points counted so far
+    STRLEN fed = 0;       // bytes present in the output region
+    STRLEN complete = 0;  // last counted code-point boundary
+    STRLEN base = 0;      // byte offset this call writes at
+    STRLEN pad = 0;       // zero-fill gap for offset past end
+    STRLEN blen;          // existing content length
+    char* buf;
+
+    if (length < 0)
+      croak("Negative length");
+
+    if (!SvOK(bufsv))
+      SvPVCLEAR(bufsv);
+    (void)SvPVutf8_force(bufsv, blen);
+
+    // Resolve the byte offset (base) where this call starts writing
+    if (offset != 0) {
+      char *pv = SvPVX(bufsv);
+      size_t chars = utf8_distance_unsafe(pv, blen);
+      if (offset < 0) {
+        size_t back = (size_t)-offset;
+        if (back > chars)
+          croak("Offset outside string");
+        base = utf8_advance_forward_unsafe(pv, blen, chars - back, NULL);
+      }
+      else if ((size_t)offset == chars) {
+        base = blen;
+      }
+      else if ((size_t)offset < chars) {
+        base = utf8_advance_forward_unsafe(pv, blen, (size_t)offset, NULL);
+      }
+      else {
+        pad = (STRLEN)((size_t)offset - chars);
+        base = blen + pad;
+      }
+    }
+
+    // Single worst-case allocation: FFFD is 3 bytes, a valid code point up
+    // to 4, so base + length*4 + 1 covers the call; buffer never regrows.
+    buf = SvGROW(bufsv, base + (STRLEN)length * 4 + 1);
+
+    // Zero-fill the offset-past-end gap.
+    if (pad) {
+      Zero(buf + blen, pad, char);
+      SvCUR_set(bufsv, base);
+    }
+
+    buf += base;
+    utf8_valid_stream_init(&s);
+
+    while (got < (size_t)length) {
+      STRLEN req = (STRLEN)(length - got);
+      SSize_t count = PerlIO_read(fh, buf + fed, req);
+
+      if (count < 0 || (count == 0 && PerlIO_error(fh)))
+        XSRETURN_UNDEF;
+
+      bool eof = (count == 0);
+      STRLEN scan = fed;
+      fed += (STRLEN)count;
+
+      // Drain the newly read bytes; a single read may contain several
+      // ill-formed subparts, each replaced in place with U+FFFD.
+      for (;;) {
+        utf8_valid_stream_result_t r;
+        r = utf8_valid_stream_check(&s, buf + scan, fed - scan, eof);
+
+        if (r.status == UTF8_VALID_STREAM_ILLFORMED ||
+            r.status == UTF8_VALID_STREAM_TRUNCATED) {
+          STRLEN sub_start = scan + r.consumed - r.carried;  // region-rel
+          STRLEN sublen = r.carried + r.advance;             // <= 3
+          STRLEN delta = 3 - sublen;                         // >= 0
+
+          if (ckWARN_d(WARN_UTF8))
+            xs_report_illformed_read(aTHX_ buf + sub_start, sublen, eof);
+
+          if (delta) { // make room, then write FFFD
+            Move(buf + sub_start + sublen,
+                 buf + sub_start + sublen + delta,
+                 fed - (sub_start + sublen), char);
+            fed += delta;
+          }
+
+          memcpy(buf + sub_start, "\xEF\xBF\xBD", 3);
+          scan = sub_start + 3; // resume just past the FFFD
+
+          if (r.status == UTF8_VALID_STREAM_TRUNCATED)
+            break;   // truncated is the final tail
+          continue;  // ill-formed: keep draining
+        }
+        break;  // OK / PARTIAL: chunk drained
+      }
+
+      // Count completed code points (FFFD included).
+      {
+        STRLEN boundary = fed - s.pending;
+        got     += utf8_distance_unsafe(buf + complete, boundary - complete);
+        complete = boundary;
+      }
+
+      if (eof)
+        break;
+    }
+
+    SvCUR_set(bufsv, base + fed);
+    *SvEND(bufsv) = '\0';
+    SvUTF8_on(bufsv);
+    SvSETMAGIC(bufsv);
+    RETVAL = (IV)got;
+  }
+  OUTPUT:
+    RETVAL
 
 void
 valid_utf8(octets)
