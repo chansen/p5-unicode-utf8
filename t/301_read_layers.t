@@ -151,23 +151,25 @@ for my $name (sort keys %CORPUS) {
   }
 }
 
-# ---- per-call code-point count semantics --------------------------------
+# ---- "at least length" code-point semantics -----------------------------
 #
-# read_utf8() returns "at least length" code points: the buffered fast-gets
-# path stops as soon as the budget is met and leaves surplus octets in the
-# layer, while the non-buffered path may over-read a trailing byte needed to
-# classify a subpart. Both remain well-formed and, drained to EOF, identical.
+# read_utf8() returns at least the requested number of code points. At a
+# budget boundary the exact count is path-dependent (the fast-gets path may
+# stop early and leave surplus octets in the layer; the non-buffered path may
+# over-read a byte needed to classify a subpart) and which path a layer takes
+# varies by perl version, so only the path-independent invariant is asserted:
+# reading in two steps yields the same characters and total count as one read.
 
-{ # fast-gets: exact budget, surplus left in the layer for the next read
+{
   no warnings 'utf8';
-  my $fh = raw_fh("A\xD4B");               # 'A', ill lead D4, 'B'
-  my $n1 = read_utf8($fh, my $b1, 2);
-  is($n1, 2, 'fast-gets: returns exactly the requested 2 code points');
-  is($b1, "A\x{FFFD}", 'fast-gets: A + U+FFFD for the D4 subpart');
-
-  my $n2 = read_utf8($fh, my $b2, 10);
-  is($n2, 1,        'fast-gets: surplus byte decoded on the next read');
-  is($b2, "B",      'fast-gets: surplus byte was left in the layer');
+  for my $layer (@LAYERS) {
+    my $fh = $MAKERS{$layer}->("A\xD4B");   # 'A', ill lead D4, 'B'
+    my $n1 = read_utf8($fh, my $b1, 2);
+    ok($n1 >= 2, "[$layer] returns at least the requested 2 code points");
+    my $n2 = read_utf8($fh, my $b2, 10);
+    is($b1 . $b2, "A\x{FFFD}B", "[$layer] A + U+FFFD(D4) + B reassembled across reads");
+    is($n1 + $n2, 3, "[$layer] total code points across reads");
+  }
 }
 
 # ---- offset handling (shared prologue, both paths) ----------------------
