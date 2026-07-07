@@ -26,8 +26,8 @@
    "prereqs" : {
       "configure" : {
          "requires" : {
-            "Devel::AssertC99" : "0",
             "Devel::PPPort" : "0",
+            "ExtUtils::CBuilder" : "0",
             "ExtUtils::MakeMaker" : "0"
          }
       },
