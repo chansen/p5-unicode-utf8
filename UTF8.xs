@@ -397,58 +397,173 @@ PerlIO_read_utf8(pTHX_ PerlIO *fh, SV *bufsv, SSize_t length, SSize_t offset) {
   buf += base;
   utf8_valid_stream_init(&s);
 
-  while (got < (size_t)length) {
-    STRLEN req = (STRLEN)(length - got);
-    SSize_t count = PerlIO_read(fh, buf + fed, req);
+  // Fast-gets layers expose the read buffer directly: validate, copy valid
+  // runs and substitute U+FFFD in a single pass out of it. Other layers fall
+  // back to the PerlIO_read() path below.
+  if (PerlIO_fast_gets(fh)) {
+    while (got < length) {
+      bool eof = false;
 
-    if (count < 0 || (count == 0 && PerlIO_error(fh)))
-      return -1;
+      if (PerlIO_get_cnt(fh) <= 0 && PerlIO_fill(fh) != 0) {
+        if (PerlIO_error(fh))
+          return -1;
+        eof = true;
+      }
 
-    bool eof = (count == 0);
-    STRLEN scan = fed;
-    fed += (STRLEN)count;
+      const char* ptr = PerlIO_get_ptr(fh);
+      STRLEN avail = (STRLEN)PerlIO_get_cnt(fh);
+      STRLEN taken = 0;
 
-    // Drain the newly read bytes; a single read may contain several
-    // ill-formed subparts, each replaced in place with U+FFFD.
-    for (;;) {
-      utf8_valid_stream_result_t r;
-      r = utf8_valid_stream_check(&s, buf + scan, fed - scan, eof);
+      if (avail == 0)
+        eof = true;
 
-      if (r.status == UTF8_VALID_STREAM_ILLFORMED ||
-          r.status == UTF8_VALID_STREAM_TRUNCATED) {
-        STRLEN sub_start = scan + r.consumed - r.carried;  // region-rel
-        STRLEN sublen = r.carried + r.advance;             // <= 3
-        STRLEN delta = 3 - sublen;                         // >= 0
+      bool span_eof = eof;  // the whole available span is the tail iff at EOF
 
-        if (ckWARN_d(WARN_UTF8))
-          xs_report_illformed_read(aTHX_ buf + sub_start, sublen, eof);
+      // Drain the span: a single fill may hold several ill-formed subparts.
+      for (;;) {
+        if (got >= length)
+          break;
 
-        if (delta) { // make room, then write FFFD
-          Move(buf + sub_start + sublen,
-               buf + sub_start + sublen + delta,
-               fed - (sub_start + sublen), char);
-          fed += delta;
+        // Cap the span to the output room left (length*4 - fed bytes).
+        STRLEN span = avail - taken;
+        STRLEN room = (STRLEN)length * 4 - fed;
+        bool tail_eof = span_eof;
+        if (span > room) {
+          span = room;
+          tail_eof = false;  // a capped span is not the stream tail
         }
 
-        memcpy(buf + sub_start, "\xEF\xBF\xBD", 3);
-        scan = sub_start + 3; // resume just past the FFFD
+        utf8_valid_stream_result_t r;
+        r = utf8_valid_stream_check(&s, ptr + taken, span, tail_eof);
+
+        // Copy the valid prefix, then walk it once to count code points and
+        // honor the budget. A run resuming a carried sequence spans from
+        // `complete`, so measure from there rather than from oldfed.
+        if (r.consumed) {
+          STRLEN oldfed = fed;
+
+          Copy(ptr + taken, buf + oldfed, r.consumed, char);
+
+          size_t took;
+          STRLEN keep = utf8_advance_forward_unsafe(
+              buf + complete, (oldfed - complete) + r.consumed,
+              (size_t)(length - got), &took);
+
+          fed = complete + keep;
+          taken += fed - oldfed;
+          got += (SSize_t)took;
+          complete = fed;
+
+          if (got >= length)
+            break;
+        }
+
+        if (r.status == UTF8_VALID_STREAM_OK)
+          break;
+
+        if (r.status == UTF8_VALID_STREAM_PARTIAL) {
+          // Carry the incomplete trailing sequence into the output; its
+          // continuation arrives on the next fill.
+          STRLEN tail = span - r.consumed;
+          Copy(ptr + taken, buf + fed, tail, char);
+          fed += tail;
+          taken += tail;
+          break;
+        }
+
+        // ILLFORMED or TRUNCATED: emit one U+FFFD for the maximal subpart.
+        {
+          if (ckWARN_d(WARN_UTF8)) {
+            STRLEN sublen = r.carried + r.advance;  // <= 3
+            char subpart[4];
+            if (r.carried)
+              memcpy(subpart, buf + fed - r.carried, r.carried);
+            if (r.advance)
+              memcpy(subpart + r.carried, ptr + taken, r.advance);
+            xs_report_illformed_read(aTHX_ subpart, sublen, span_eof);
+          }
+
+          fed -= r.carried;   // drop the carried lead already sitting in buf
+          memcpy(buf + fed, "\xEF\xBF\xBD", 3);
+          fed += 3;
+          got += 1;
+          taken += r.advance;  // skip this fill's portion of the subpart
+          complete = fed;
+        }
 
         if (r.status == UTF8_VALID_STREAM_TRUNCATED)
-          break;   // truncated is the final tail
-        continue;  // ill-formed: keep draining
+          break;
       }
-      break;  // OK / PARTIAL: chunk drained
+
+      if (avail)
+        PerlIO_set_ptrcnt(fh, (char*)ptr + taken, (SSize_t)(avail - taken));
+
+      if (eof)
+        break;
+    }
+  }
+  else {
+    while (got < (size_t)length) {
+      STRLEN req = (STRLEN)(length - got);
+      SSize_t count = PerlIO_read(fh, buf + fed, req);
+
+      if (count < 0 || (count == 0 && PerlIO_error(fh)))
+        return -1;
+
+      bool eof = (count == 0);
+      STRLEN scan = fed;
+      fed += (STRLEN)count;
+
+      // Drain the newly read bytes; a single read may contain several
+      // ill-formed subparts, each replaced in place with U+FFFD.
+      for (;;) {
+        utf8_valid_stream_result_t r;
+        r = utf8_valid_stream_check(&s, buf + scan, fed - scan, eof);
+
+        if (r.status == UTF8_VALID_STREAM_ILLFORMED ||
+            r.status == UTF8_VALID_STREAM_TRUNCATED) {
+          STRLEN sub_start = scan + r.consumed - r.carried;  // region-rel
+          STRLEN sublen = r.carried + r.advance;             // <= 3
+          STRLEN delta = 3 - sublen;                         // >= 0
+
+          if (ckWARN_d(WARN_UTF8))
+            xs_report_illformed_read(aTHX_ buf + sub_start, sublen, eof);
+
+          if (delta) { // make room, then write FFFD
+            Move(buf + sub_start + sublen,
+                 buf + sub_start + sublen + delta,
+                 fed - (sub_start + sublen), char);
+            fed += delta;
+          }
+
+          memcpy(buf + sub_start, "\xEF\xBF\xBD", 3);
+          scan = sub_start + 3; // resume just past the FFFD
+
+          if (r.status == UTF8_VALID_STREAM_TRUNCATED)
+            break;   // truncated is the final tail
+          continue;  // ill-formed: keep draining
+        }
+        break;  // OK / PARTIAL: chunk drained
+      }
+
+      // Count completed code points (FFFD included).
+      {
+        STRLEN boundary = fed - s.pending;
+        got     += utf8_distance_unsafe(buf + complete, boundary - complete);
+        complete = boundary;
+      }
+
+      if (eof)
+        break;
     }
 
-    // Count completed code points (FFFD included).
-    {
-      STRLEN boundary = fed - s.pending;
-      got     += utf8_distance_unsafe(buf + complete, boundary - complete);
-      complete = boundary;
+    // A trailing incomplete sequence was read but not emitted; push it back so
+    // the next call re-reads it. At EOF the drain already resolved any tail to
+    // U+FFFD, so s.pending is 0 there.
+    if (s.pending) {
+      PerlIO_unread(fh, buf + fed - s.pending, s.pending);
+      fed -= s.pending;
     }
-
-    if (eof)
-      break;
   }
 
   SvCUR_set(bufsv, base + fed);
