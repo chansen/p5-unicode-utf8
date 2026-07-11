@@ -5,6 +5,10 @@
 #define NEED_sv_2pv_flags
 #include "ppport.h"
 
+#if !defined(__cplusplus) && defined(_MSC_VER) && _MSC_VER < 1900
+#  define inline __inline
+#endif
+
 #include "utf8_dfa32.h"
 #include "utf8_valid.h"
 #include "utf8_valid_stream.h"
