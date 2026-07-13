@@ -1,3 +1,8 @@
+0.74 2026-07-13
+ - Fixed slurp_utf8() failing to link on Windows: PerlIO_openn is not
+   exported there. The file is now opened with the unbuffered PerlLIO
+   fd wrappers (open3/fstat/read/close) instead.
+
 0.73 2026-07-13
  - Added slurp_utf8($filename) which reads an entire file and returns its
    contents decoded from UTF-8 as a character string.
