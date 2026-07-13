@@ -552,7 +552,7 @@ PerlIO_read_utf8(pTHX_ PerlIO *fh, SV *bufsv, SSize_t length, SSize_t offset) {
 
       // Count completed code points (FFFD included).
       {
-        STRLEN boundary = fed - s.pending;
+        STRLEN boundary = fed - s.carried;
         got     += utf8_distance_unsafe(buf + complete, boundary - complete);
         complete = boundary;
       }
@@ -564,9 +564,9 @@ PerlIO_read_utf8(pTHX_ PerlIO *fh, SV *bufsv, SSize_t length, SSize_t offset) {
     // A trailing incomplete sequence was read but not emitted; push it back so
     // the next call re-reads it. At EOF the drain already resolved any tail to
     // U+FFFD, so s.pending is 0 there.
-    if (s.pending) {
-      PerlIO_unread(fh, buf + fed - s.pending, s.pending);
-      fed -= s.pending;
+    if (s.carried) {
+      PerlIO_unread(fh, buf + fed - s.carried, s.carried);
+      fed -= s.carried;
     }
   }
 
