@@ -27,6 +27,10 @@
 # define SvPVCLEAR(sv) sv_setpvs((sv), "")
 #endif
 
+#ifndef O_BINARY
+# define O_BINARY 0
+#endif
+
 static inline STRLEN
 xs_utf8_check(const U8 *src, STRLEN len) {
   STRLEN off;
@@ -588,8 +592,8 @@ static SV *
 xs_slurp_utf8(pTHX_ SV *namesv) {
   const STRLEN CHUNK = 65536;
   const char *filename = SvPV_nolen(namesv);
-  PerlIO *fh = PerlIO_openn(aTHX_ ":unix", "r", -1, 0, 0, NULL, 1, &namesv);
-  if (!fh)
+  int fd = PerlLIO_open3(filename, O_RDONLY | O_BINARY, 0);
+  if (fd < 0)
     croak("Couldn't open '%s': %s", filename, Strerror(errno));
 
   utf8_valid_stream_t s;
@@ -605,8 +609,7 @@ xs_slurp_utf8(pTHX_ SV *namesv) {
   // Non-regular files (pipes/FIFOs) report no size and start at one chunk.
   {
     Stat_t st;
-    int fd = PerlIO_fileno(fh);
-    if (fd >= 0 && PerlLIO_fstat(fd, &st) == 0 &&
+    if (PerlLIO_fstat(fd, &st) == 0 &&
         S_ISREG(st.st_mode) && st.st_size > 0)
       cap = (STRLEN)st.st_size;
   }
@@ -624,10 +627,13 @@ xs_slurp_utf8(pTHX_ SV *namesv) {
       buf = SvGROW(sv, cap + 1);
     }
 
-    SSize_t count = PerlIO_read(fh, buf + fed, CHUNK);
-    if (count < 0 || (count == 0 && PerlIO_error(fh))) {
-      const int saved = errno; // XXX Is this portable?
-      PerlIO_close(fh);
+    SSize_t count;
+    do {
+      count = PerlLIO_read(fd, buf + fed, CHUNK);
+    } while (count < 0 && errno == EINTR);
+    const int saved = errno;
+    if (count < 0) {
+      PerlLIO_close(fd);
       croak("Couldn't read '%s': %s", filename, Strerror(saved));
     }
 
@@ -670,7 +676,7 @@ xs_slurp_utf8(pTHX_ SV *namesv) {
       break;
   }
 
-  PerlIO_close(fh);
+  PerlLIO_close(fd);
 
   SvCUR_set(sv, fed);
   *SvEND(sv) = '\0';
