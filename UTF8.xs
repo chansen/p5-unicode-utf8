@@ -9,7 +9,9 @@
 #  define inline __inline
 #endif
 
-#define UTF8_VALID_STREAM_PROBE_WINDOW_SIZE 1024
+#ifndef UTF8_VALID_STREAM_PROBE_WINDOW_SIZE
+#  define UTF8_VALID_STREAM_PROBE_WINDOW_SIZE 1024
+#endif
 
 #include "utf8_dfa32.h"
 #include "utf8_valid.h"
