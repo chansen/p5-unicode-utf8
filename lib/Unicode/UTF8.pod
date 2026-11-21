@@ -4,18 +4,42 @@ Unicode::UTF8 - Encoding and decoding of UTF-8 encoding form
 
 =head1 SYNOPSIS
 
-    use Unicode::UTF8 qw[decode_utf8 encode_utf8 read_utf8];
-    
-    use warnings FATAL => 'utf8'; # fatalize encoding glitches
+    use Unicode::UTF8 qw[ decode_utf8 encode_utf8 valid_utf8
+                          read_utf8 slurp_utf8 ];
+
     $string = decode_utf8($octets);
     $octets = encode_utf8($string);
-    
-    $count = read_utf8($fh, $buf, $length);
+
+    $boolean = valid_utf8($octets);
+
+    $count  = read_utf8($fh, $buf, $length);
+    $string = slurp_utf8($filename);
+
+    # throw an exception instead of substituting U+FFFD
+    use warnings FATAL => 'utf8';
 
 =head1 DESCRIPTION
 
-This module provides functions to encode and decode UTF-8 encoding form as 
-specified by Unicode and ISO/IEC 10646:2011.
+This module encodes and decodes the UTF-8 encoding form as specified by the
+Unicode Standard and ISO/IEC 10646.
+
+It is strict: only well-formed UTF-8 is accepted when decoding, and only
+well-formed UTF-8 is produced when encoding. Non-shortest forms, surrogates
+(U+D800..U+DFFF) and code points above U+10FFFF are never passed through.
+Noncharacters are allowed and receive no special handling.
+
+=head2 Error handling
+
+Input that cannot be decoded or encoded is not fatal by default. Each
+offending sequence or code point is replaced with REPLACEMENT CHARACTER
+(U+FFFD) and reported with a warning in the C<utf8> category. These warnings
+are enabled by default, also without C<use warnings>.
+
+    no warnings 'utf8';             # substitute silently
+    use warnings FATAL => 'utf8';   # throw an exception instead
+
+C<decode_utf8> and C<encode_utf8> also accept a C<$fallback> that chooses
+the replacement.
 
 =head1 FUNCTIONS
 
@@ -24,53 +48,138 @@ specified by Unicode and ISO/IEC 10646:2011.
     $string = decode_utf8($octets);
     $string = decode_utf8($octets, $fallback);
 
-Returns a decoded representation of C<$octets> in UTF-8 encoding as a character
-string.
+Decodes C<$octets>, a string of UTF-8 encoded octets, and returns the
+resulting character string.
 
-C<$fallback> is an optional C<CODE> reference which provides a error-handling 
-mechanism, allowing customization of error handling. The default error-handling 
-mechanism is to replace any ill-formed UTF-8 sequences with REPLACEMENT
-CHARACTER (U+FFFD).
+Each ill-formed sequence is replaced with U+FFFD and reported with a warning
+(see L</Error handling>). One U+FFFD is substituted for each I<maximal
+subpart> of an ill-formed sequence, which is the practice recommended by
+Unicode: the longest run of octets that could begin a well-formed sequence,
+or otherwise a single octet.
 
-    $string = $fallback->($octets, $is_usv, $position);
+    Octets           Decoded as              Reason
+    <E2 82 AC>       U+20AC
+    <80>             U+FFFD                  unexpected continuation octet
+    <E2 82>          U+FFFD                  truncated sequence
+    <C0 80>          U+FFFD U+FFFD           non-shortest form
+    <ED A0 80>       U+FFFD U+FFFD U+FFFD    surrogate (U+D800)
+    <F4 90 80 80>    U+FFFD (four times)     above U+10FFFF
 
-C<$fallback> is invoked with three arguments: C<$octets>, C<$is_usv> and 
-C<$position>. C<$octets> is a sequence of one or more octets containing the 
-maximal subpart of the ill-formed subsequence or encoded code point which 
-can't be interchanged. C<$is_usv> is a boolean indicating whether or not 
-C<$octets> represent a encoded Unicode scalar value. C<$position> is a 
-unsigned integer containing the zero based octet position at which the error 
-occurred within the octets provided to C<decode_utf8()>. C<$fallback> must 
-return a character string consisting of zero or more Unicode scalar values. 
-Unicode scalar values consist of code points in the range U+0000..U+D7FF and 
-U+E000..U+10FFFF.
+Throws an exception if C<$octets> contains a wide character (a code point
+above 0xFF), since it is then not a string of octets.
+
+C<$fallback> is an optional C<CODE> reference that is called for each
+ill-formed sequence. Its return value is used in place of U+FFFD.
+
+    $replacement = $fallback->($octets, $is_usv, $position);
+
+=over 4
+
+=item C<$octets>
+
+The maximal subpart of the ill-formed sequence, one to three octets.
+
+=item C<$is_usv>
+
+Always false. Kept for backwards compatibility: before version 0.64 it was
+true when the fallback was invoked for a noncharacter.
+
+=item C<$position>
+
+The zero-based octet offset of the sequence within the string given to
+C<decode_utf8>.
+
+=back
+
+C<$fallback> must return a character string of zero or more Unicode scalar
+values (code points in the range U+0000..U+D7FF and U+E000..U+10FFFF). The
+returned string is inserted as is and is not validated.
+
+The warning is issued before C<$fallback> is called, so C<$fallback> is
+normally used together with C<no warnings 'utf8'>. If the warning is fatal,
+C<$fallback> is not called.
+
+    no warnings 'utf8';
+
+    # remove ill-formed sequences
+    $string = decode_utf8($octets, sub { '' });
+
+    # interpret the octets of ill-formed sequences as ISO-8859-1
+    $string = decode_utf8($octets, sub { $_[0] });
+
+    # show the octets of ill-formed sequences as hexadecimal escapes
+    $string = decode_utf8($octets, sub {
+        join '', map { sprintf '\x%.2X', ord } split //, $_[0];
+    });
 
 =head2 encode_utf8
 
     $octets = encode_utf8($string);
     $octets = encode_utf8($string, $fallback);
 
-Returns an encoded representation of C<$string> in UTF-8 encoding as an octet
-string.
+Encodes C<$string>, a character string, as UTF-8 and returns the resulting
+string of octets.
 
-C<$fallback> is an optional C<CODE> reference which provides a error-handling 
-mechanism, allowing customization of error handling. The default error-handling 
-mechanism is to replace any code points which can't be interchanged or represented 
-in UTF-8 encoding form with REPLACEMENT CHARACTER (U+FFFD).
+Every Unicode scalar value is encoded. A code point that cannot be
+represented in the UTF-8 encoding form is replaced with U+FFFD and reported
+with a warning (see L</Error handling>). These are the surrogates
+(U+D800..U+DFFF) and the code points above U+10FFFF, which only exist in
+Perl's extended code space.
 
-    $string = $fallback->($codepoint, $is_usv, $position);
+    Code point       Encoded as              Reason
+    U+20AC           <E2 82 AC>
+    U+FFFE           <EF BF BE>              noncharacter, allowed
+    U+D800           <EF BF BD>              surrogate
+    0x110000         <EF BF BD>              above U+10FFFF
 
-C<$fallback> is invoked with three arguments: C<$codepoint>, C<$is_usv> and 
-C<$position>. C<$codepoint> is a unsigned integer containing the code point 
-which can't be interchanged or represented in UTF-8 encoding form. C<$is_usv> 
-is a boolean indicating whether or not C<$codepoint> is a Unicode scalar value. 
-C<$position> is a unsigned integer containing the zero based character position 
-at which the error occurred within the string provided to C<encode_utf8()>. 
-C<$fallback> must return a character string consisting of zero or more Unicode 
-scalar values.Unicode scalar values consist of code points in the range 
-U+0000..U+D7FF and U+E000..U+10FFFF.
+The warnings are issued in the C<utf8> category. On Perl 5.14 or later they
+can also be controlled with its sub-categories C<surrogate> and
+C<non_unicode>.
 
-=head2 read_utf8  
+C<$fallback> is an optional C<CODE> reference that is called for each code
+point that cannot be represented. Its return value is encoded in place of
+U+FFFD.
+
+    $replacement = $fallback->($codepoint, $is_usv, $position);
+
+=over 4
+
+=item C<$codepoint>
+
+The code point that cannot be represented, as an unsigned integer.
+
+=item C<$is_usv>
+
+Always false. Kept for backwards compatibility: before version 0.64 it was
+true when the fallback was invoked for a noncharacter.
+
+=item C<$position>
+
+The zero-based character offset of the code point within the string given to
+C<encode_utf8>.
+
+=back
+
+C<$fallback> must return a character string of zero or more Unicode scalar
+values (code points in the range U+0000..U+D7FF and U+E000..U+10FFFF). The
+returned string is encoded as is and is not validated.
+
+The warning is issued before C<$fallback> is called, so C<$fallback> is
+normally used together with C<no warnings 'utf8'>. If the warning is fatal,
+C<$fallback> is not called.
+
+    no warnings 'utf8';
+
+    # remove code points that cannot be represented
+    $octets = encode_utf8($string, sub { '' });
+
+    # show them as Perl escapes
+    $octets = encode_utf8($string, sub { sprintf '\x{%X}', $_[0] });
+
+Throws an exception if Perl's internal representation of C<$string> is
+ill-formed.
+
+=head2 read_utf8
 
     $count = read_utf8($fh, $buf, $length);
     $count = read_utf8($fh, $buf, $length, $offset);
@@ -124,8 +233,10 @@ Since version 0.73.
 
     $boolean = valid_utf8($octets);
 
-Returns a boolean indicating whether or not the given C<$octets> consist of 
-well-formed UTF-8 sequences.
+Returns a boolean indicating whether or not C<$octets> consists of
+well-formed UTF-8 sequences. No warnings are issued.
+
+Throws an exception if C<$octets> contains a wide character.
 
 Since version 0.60.
 
@@ -139,21 +250,30 @@ None by default. All functions can be exported using the C<:all> tag or individu
 
 =item Can't decode a wide character string
 
-(F) Wide character in octets.
+(F) The C<$octets> given to C<decode_utf8> contain a code point above 0xFF.
 
 =item Can't validate a wide character string
 
-(F) Wide character in octets.
+(F) The C<$octets> given to C<valid_utf8> contain a code point above 0xFF.
 
 =item Can't decode ill-formed UTF-8 octet sequence <%s> in position %u
 
-(W utf8) Encountered an ill-formed UTF-8 octet sequence. <%s> contains a 
-hexadecimal representation of the maximal subpart of the ill-formed subsequence.
+(W utf8) C<decode_utf8> encountered an ill-formed UTF-8 octet sequence. <%s>
+contains a hexadecimal representation of the maximal subpart of the
+ill-formed sequence, and %u is its octet offset.
+
+=item Can't decode ill-formed UTF-8 octet sequence <%s>
+
+=item Can't decode ill-formed UTF-8 octet sequence <%s> at end of file
+
+(W utf8) C<read_utf8> or C<slurp_utf8> encountered an ill-formed UTF-8 octet
+sequence. The second form is used for a sequence that is cut short by the
+end of the file.
 
 =item Can't represent surrogate code point U+%X in position %u
 
-(W utf8, surrogate) Surrogate code points are designated only for surrogate code 
-units in the UTF-16 character encoding form. Surrogates consist of code points 
+(W utf8, surrogate) Surrogate code points are designated only for surrogate code
+units in the UTF-16 character encoding form. Surrogates consist of code points
 in the range U+D800 to U+DFFF.
 
 =item Can't represent super code point \x{%X} in position %u
@@ -162,13 +282,31 @@ in the range U+D800 to U+DFFF.
 
 =item Can't decode ill-formed UTF-X octet sequence <%s> in position %u
 
-(F) Encountered an ill-formed octet sequence in Perl's internal representation 
+(F) Encountered an ill-formed octet sequence in Perl's internal representation
 of wide characters.
+
+=item Negative length
+
+=item Offset outside string
+
+(F) The C<$length> or C<$offset> given to C<read_utf8> is out of range.
+
+=item Couldn't open '%s': %s
+
+=item Couldn't read '%s': %s
+
+(F) C<slurp_utf8> could not open or read the file.
+
+=item Wide character in filename
+
+=item Invalid \0 character in filename
+
+(F) The C<$filename> given to C<slurp_utf8> is not a usable string of octets.
 
 =back
 
-The sub-categories: C<surrogate> and C<non_unicode> is only available on Perl 5.14
-or greater. See L<perllexwarn> for available categories and hierarchies.
+The sub-categories C<surrogate> and C<non_unicode> are only available on Perl
+5.14 or later. See L<perllexwarn> for available categories and hierarchies.
 
 =head1 COMPARISON
 
@@ -190,7 +328,7 @@ Better diagnostics in warning messages
 
 =item *
 
-Detects and reports inconsistency in Perl's internal representation of 
+Detects and reports inconsistency in Perl's internal representation of
 wide characters (UTF-X)
 
 =item *
@@ -199,15 +337,15 @@ Preserves taintedness of decoded C<$octets> or encoded C<$string>
 
 =item *
 
-Better performance ~ 600% - 1200% (JA: 600%, AR: 700%, SV: 900%, EN: 1200%, 
+Better performance ~ 600% - 1200% (JA: 600%, AR: 700%, SV: 900%, EN: 1200%,
 see benchmarks directory in git repository)
 
 =back
 
 =head1 CONFORMANCE
 
-It's the author's belief that this UTF-8 implementation is conformant with 
-the Unicode Standard Version 6.0. Any deviations from the Unicode Standard 
+It's the author's belief that this UTF-8 implementation is conformant with
+the Unicode Standard Version 6.0. Any deviations from the Unicode Standard
 is to be considered a bug.
 
 =head1 SEE ALSO
@@ -226,13 +364,13 @@ is to be considered a bug.
 
 =head2 BUGS
 
-Please report any bugs through the web interface at 
+Please report any bugs through the web interface at
 L<https://github.com/chansen/p5-unicode-utf8/issues>.
 You will be automatically notified of any progress on the request by the system.
 
 =head2 SOURCE CODE
 
-This is open source software. The code repository is available for public 
+This is open source software. The code repository is available for public
 review and contribution under the terms of the license.
 
 L<http://github.com/chansen/p5-unicode-utf8>
