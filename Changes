@@ -1,3 +1,18 @@
+
+ - slurp_utf8() now treats $filename as a string of octets: an upgraded
+   filename is downgraded first, so the same file is opened regardless of
+   the string's internal representation. Throws an exception if the
+   filename contains a wide character or "\0".
+ - slurp_utf8() now invokes get magic on $filename only once.
+ - Update the c-utf8 library code: the streaming validator is now
+   utf8_scanner.h. The compile-time option
+   UTF8_VALID_STREAM_PROBE_WINDOW_SIZE is renamed to
+   UTF8_SCANNER_PROBE_WINDOW_SIZE.
+ - Overhauled the documentation: decode_utf8() and encode_utf8() are
+   described with examples, the fallback arguments are itemised and the
+   missing diagnostics are listed. Documented that $is_usv is always false
+   since 0.64.
+
 0.75 2026-07-14
  - Fixed slurp_utf8() leaking the file descriptor if a fatal "utf8" warning
    (e.g. warnings FATAL => 'utf8') was thrown while reading an ill-formed file.
