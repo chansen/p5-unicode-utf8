@@ -597,9 +597,8 @@ xs_close_fd(pTHX_ void *p) {
 // utf8 category).
 // Returns a mortal, UTF8-on SV; croaks if the file cannot be opened or read.
 static SV *
-xs_slurp_utf8(pTHX_ SV *namesv) {
+xs_slurp_utf8(pTHX_ const char *filename) {
   const STRLEN CHUNK = 65536;
-  const char *filename = SvPV_nolen(namesv);
   int fd = PerlLIO_open3(filename, O_RDONLY | O_BINARY, 0);
   if (fd < 0)
     croak("Couldn't open '%s': %s", filename, Strerror(errno));
@@ -815,7 +814,23 @@ slurp_utf8(filename)
     SV *filename
   PPCODE:
   {
-    ST(0) = xs_slurp_utf8(aTHX_ filename);
+    STRLEN len;
+    const char *filename_pv;
+
+    SvGETMAGIC(filename);
+    filename_pv = SvPV_nomg_const(filename, len);
+    if (SvUTF8(filename)) {
+      // Downgrade a copy made from the fetched string, so that get magic
+      // is not invoked a second time.
+      filename = sv_2mortal(newSVpvn(filename_pv, len));
+      SvUTF8_on(filename);
+      if (!sv_utf8_downgrade(filename, TRUE))
+        croak("Wide character in filename");
+      filename_pv = SvPV_const(filename, len);
+    }
+    if (memchr(filename_pv, '\0', len))
+      croak("Invalid \\0 character in filename");
+    ST(0) = xs_slurp_utf8(aTHX_ filename_pv);
     XSRETURN(1);
   }
 

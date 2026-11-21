@@ -115,7 +115,8 @@ Ill-formed and truncated input is not fatal: each maximal ill-formed subpart is
 replaced with the Unicode replacement character U+FFFD and a warning is emitted in
 the C<utf8> warnings category.
 
-Throws an exception if the file cannot be opened or read.
+C<$filename> must be a string of octets. Throws an exception if it contains a
+wide character or C<"\0">, or if the file cannot be opened or read.
 
 Since version 0.73.
 

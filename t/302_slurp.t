@@ -138,11 +138,64 @@ SKIP: {
   is(scalar @w, $wwarn, 'FIFO: utf8 warning count matches decode_utf8');
 }
 
+# ---- filename is a string of octets -------------------------------------
+
+{
+  package Local::FetchCounter;
+  sub TIESCALAR { my ($class, $value) = @_; bless { value => $value, count => 0 }, $class }
+  sub FETCH     { $_[0]{count}++; $_[0]{value} }
+}
+
+{
+  # The name holds octets above 0x7F. The same file must be opened whether
+  # or not the string happens to be stored upgraded.
+  my $dir  = tempdir(CLEANUP => 1);
+  my $name = "$dir/caf\xC3\xA9.txt";
+  {
+    open my $fh, '>', $name or die "Cannot create '$name': $!";
+    binmode $fh;
+    print {$fh} "ok";
+    close $fh;
+  }
+
+  my $upgraded = $name;
+  utf8::upgrade($upgraded);
+
+  ok(!utf8::is_utf8($name),    'filename: octets are downgraded');
+  ok(utf8::is_utf8($upgraded), 'filename: copy is upgraded');
+  is(slurp_utf8($name),     'ok', 'filename: downgraded string opens the file');
+  is(slurp_utf8($upgraded), 'ok', 'filename: upgraded string opens the same file');
+  ok(utf8::is_utf8($upgraded), 'filename: upgraded argument is not modified');
+
+  for my $case ([ downgraded => $name ], [ upgraded => $upgraded ]) {
+    my ($form, $value) = @$case;
+    tie my $tied, 'Local::FetchCounter', $value;
+    is(slurp_utf8($tied), 'ok',     "filename: tied $form string opens the file");
+    is((tied $tied)->{count}, 1,    "filename: tied $form string is fetched once");
+  }
+}
+
 # ---- errors --------------------------------------------------------------
 
 throws_ok {
   slurp_utf8("this/file/does/not/exist.$$");
 } qr!^Couldn't open 'this/file/does/not/exist\.$$': !,
   'missing file croaks with "Couldn\'t open ..."';
+
+throws_ok {
+  slurp_utf8("snowman-\x{2603}.txt");
+} qr/^Wide character in filename/,
+  'wide character in filename croaks';
+
+for my $case ([ downgraded => 0 ], [ upgraded => 1 ]) {
+  my ($form, $upgrade) = @$case;
+  my $name = "passwd\0.txt";
+  utf8::upgrade($name) if $upgrade;
+
+  throws_ok {
+    slurp_utf8($name);
+  } qr/^Invalid \\0 character in filename/,
+    "NUL in $form filename croaks";
+}
 
 done_testing;
