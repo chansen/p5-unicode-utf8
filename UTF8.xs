@@ -699,6 +699,97 @@ xs_slurp_utf8(pTHX_ const char *filename) {
   return sv;
 }
 
+// Write a whole string to a file, encoded as UTF-8, using unbuffered (:unix)
+// IO. The file is created if it does not exist and truncated if it does.
+// The string is validated and encoded as by encode_utf8(): only well-formed
+// UTF-8 is written, with U+FFFD substituted for each code point that cannot
+// be represented (warning in the utf8 category).
+// Croaks if the file cannot be opened, written or closed.
+static void
+xs_spew_utf8(pTHX_ const char *filename, SV *string) {
+  // Upper bound for a single write: the count taken by write() is an int
+  // or unsigned int on some platforms.
+  const STRLEN CHUNK = (STRLEN)1 << 30;
+  STRLEN len, off;
+  const U8 *octets = (const U8 *)SvPV_const(string, len);
+  const char *src;
+  int fd;
+
+  // Validate and encode before the file is opened: a fatal warning or an
+  // ill-formed string then leaves an existing file untouched.
+  if (!SvUTF8(string)) {
+    // Native 8-bit string: ASCII is UTF-8 as it stands, anything else is
+    // encoded.
+    const U8 *p = octets;
+    const U8 *e = octets + len;
+
+    while (p < e && *p < 0x80)
+      p++;
+    if (p != e) {
+      SV *encoded = sv_newmortal();
+      xs_utf8_encode_native(aTHX_ encoded, octets, len, FALSE);
+      octets = (const U8 *)SvPV_const(encoded, len);
+    }
+  }
+  else if (!utf8_check_ascii((const char *)octets, len, &off)) {
+    // Perl's internal representation is not well-formed UTF-8: it holds a
+    // surrogate or a code point above U+10FFFF. Re-encode with U+FFFD.
+    SV *encoded = sv_newmortal();
+    xs_utf8_encode_replace(aTHX_ encoded, octets, len, off, NULL);
+    octets = (const U8 *)SvPV_const(encoded, len);
+  }
+  // Otherwise the internal representation has just been validated as
+  // well-formed UTF-8 and is written as it stands.
+
+  src = (const char *)octets;
+  fd = PerlLIO_open3(filename, O_WRONLY | O_CREAT | O_TRUNC | O_BINARY, 0666);
+  if (fd < 0)
+    croak("Couldn't open '%s': %s", filename, Strerror(errno));
+
+  // Nothing below calls back into Perl, so the descriptor is closed
+  // explicitly on every path.
+  while (len > 0) {
+    SSize_t count;
+    do {
+      count = PerlLIO_write(fd, src, len < CHUNK ? len : CHUNK);
+    } while (count < 0 && errno == EINTR);
+    if (count < 0) {
+      const int saved = errno;
+      PerlLIO_close(fd);
+      croak("Couldn't write '%s': %s", filename, Strerror(saved));
+    }
+    src += count;
+    len -= (STRLEN)count;
+  }
+
+  if (PerlLIO_close(fd) != 0)
+    croak("Couldn't close '%s': %s", filename, Strerror(errno));
+}
+
+// Returns the octets of a filename argument as a NUL-terminated string held
+// by a mortal copy, so that it stays valid whatever later get magic does to
+// the argument. Get magic is invoked once. Croaks on a wide character or an
+// embedded NUL.
+static const char *
+xs_filename(pTHX_ SV *sv) {
+  STRLEN len;
+  const char *pv;
+  SV *copy;
+
+  SvGETMAGIC(sv);
+  pv = SvPV_nomg_const(sv, len);
+  copy = sv_2mortal(newSVpvn(pv, len));
+  if (SvUTF8(sv)) {
+    SvUTF8_on(copy);
+    if (!sv_utf8_downgrade(copy, TRUE))
+      croak("Wide character in filename");
+  }
+  pv = SvPV_const(copy, len);
+  if (memchr(pv, '\0', len))
+    croak("Invalid \\0 character in filename");
+  return pv;
+}
+
 /* SVt_PV, SVt_PVIV, SVt_PVNV, SVt_PVMG */
 #define SvPV_stealable(sv) \
   ((SvFLAGS(sv) & ~(SVTYPEMASK|SVf_UTF8)) == (SVs_TEMP|SVf_POK|SVp_POK) && \
@@ -820,26 +911,26 @@ void
 slurp_utf8(filename)
     SV *filename
   PPCODE:
-  {
-    STRLEN len;
-    const char *filename_pv;
-
-    SvGETMAGIC(filename);
-    filename_pv = SvPV_nomg_const(filename, len);
-    if (SvUTF8(filename)) {
-      // Downgrade a copy made from the fetched string, so that get magic
-      // is not invoked a second time.
-      filename = sv_2mortal(newSVpvn(filename_pv, len));
-      SvUTF8_on(filename);
-      if (!sv_utf8_downgrade(filename, TRUE))
-        croak("Wide character in filename");
-      filename_pv = SvPV_const(filename, len);
-    }
-    if (memchr(filename_pv, '\0', len))
-      croak("Invalid \\0 character in filename");
-    ST(0) = xs_slurp_utf8(aTHX_ filename_pv);
+    ST(0) = xs_slurp_utf8(aTHX_ xs_filename(aTHX_ filename));
     XSRETURN(1);
-  }
+
+void
+spew_utf8(filename, string)
+    SV *filename
+    SV *string
+  PREINIT:
+    const char *path;
+  PPCODE:
+    path = xs_filename(aTHX_ filename);
+
+    // Opening a file for writing by a tainted name is not allowed under -T.
+    if (SvTAINTED(filename)) {
+      TAINT;
+      TAINT_PROPER("spew_utf8");
+    }
+
+    xs_spew_utf8(aTHX_ path, string);
+    XSRETURN_YES;
 
 void
 valid_utf8(octets)

@@ -5,7 +5,7 @@ Unicode::UTF8 - Encoding and decoding of UTF-8 encoding form
 =head1 SYNOPSIS
 
     use Unicode::UTF8 qw[ decode_utf8 encode_utf8 valid_utf8
-                          read_utf8 slurp_utf8 ];
+                          read_utf8 slurp_utf8 spew_utf8 ];
 
     $string = decode_utf8($octets);
     $octets = encode_utf8($string);
@@ -14,6 +14,7 @@ Unicode::UTF8 - Encoding and decoding of UTF-8 encoding form
 
     $count  = read_utf8($fh, $buf, $length);
     $string = slurp_utf8($filename);
+    spew_utf8($filename, $string);
 
     # throw an exception instead of substituting U+FFFD
     use warnings FATAL => 'utf8';
@@ -224,10 +225,22 @@ Ill-formed and truncated input is not fatal: each maximal ill-formed subpart is
 replaced with the Unicode replacement character U+FFFD and a warning is emitted in
 the C<utf8> warnings category.
 
-C<$filename> must be a string of octets. Throws an exception if it contains a
-wide character or C<"\0">, or if the file cannot be opened or read.
-
 Since version 0.73.
+
+=head2 spew_utf8
+
+    spew_utf8($filename, $string);
+
+Writes C<$string>, encoded as UTF-8, to the file named C<$filename>. The file
+is created if it does not exist and truncated if it does. It is written using
+unbuffered (C<:unix>) IO. Returns true.
+
+C<$string> is encoded as by C<encode_utf8>: each code point that cannot be
+represented is replaced with U+FFFD and a warning is emitted in the C<utf8>
+warnings category. The string is encoded before the file is opened, so if the
+warning is fatal an existing file is left untouched.
+
+Since version 0.76.
 
 =head2 valid_utf8
 
@@ -295,13 +308,23 @@ of wide characters.
 
 =item Couldn't read '%s': %s
 
-(F) C<slurp_utf8> could not open or read the file.
+=item Couldn't write '%s': %s
+
+=item Couldn't close '%s': %s
+
+(F) C<slurp_utf8> or C<spew_utf8> could not open, read, write or close the
+file.
 
 =item Wide character in filename
 
 =item Invalid \0 character in filename
 
-(F) The C<$filename> given to C<slurp_utf8> is not a usable string of octets.
+(F) The C<$filename> given to C<slurp_utf8> or C<spew_utf8> is not a usable
+string of octets.
+
+=item Insecure dependency in spew_utf8 while running with -T switch
+
+(F) The C<$filename> given to C<spew_utf8> is tainted.
 
 =back
 
